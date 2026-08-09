@@ -86,6 +86,19 @@ describe("apiFetch", () => {
     );
   });
 
+  it("does not send a JSON content type for a bodyless request", async () => {
+    setToken("signed-token");
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response(JSON.stringify({ status: "returned" })));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await apiFetch("/loans/loan-id/return", { method: "POST" });
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(new Headers(init.headers).has("Content-Type")).toBe(false);
+  });
+
   it("clears auth and redirects to login on unauthorized responses", async () => {
     setToken("expired-token");
     vi.stubGlobal(

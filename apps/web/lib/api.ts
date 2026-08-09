@@ -18,7 +18,9 @@ export async function publicApiFetch<T>(
   init: RequestInit = {},
 ): Promise<T> {
   const headers = new Headers(init.headers);
-  headers.set("Content-Type", "application/json");
+  if (init.body) {
+    headers.set("Content-Type", "application/json");
+  }
 
   const response = await fetch(
     `${process.env.NEXT_PUBLIC_API_URL}${path}`,
@@ -35,7 +37,9 @@ export async function apiFetch<T>(
   const token = getToken();
   const headers = new Headers(init.headers);
 
-  headers.set("Content-Type", "application/json");
+  if (init.body) {
+    headers.set("Content-Type", "application/json");
+  }
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);
   }
