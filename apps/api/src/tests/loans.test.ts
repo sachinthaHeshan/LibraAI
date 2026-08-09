@@ -167,14 +167,17 @@ describe("loans API", () => {
     expect(response.statusCode).toBe(400);
   });
 
-  it("rejects a due date that is not a real calendar date", async () => {
-    const book = await createBook();
-    const member = await createMember();
+  it.each(["2026-02-30", "0000-01-01"])(
+    "rejects invalid calendar due date %s",
+    async (dueDate) => {
+      const book = await createBook();
+      const member = await createMember();
 
-    const response = await issueLoan(book.id, member.id, "2026-02-30");
+      const response = await issueLoan(book.id, member.id, dueDate);
 
-    expect(response.statusCode).toBe(400);
-  });
+      expect(response.statusCode).toBe(400);
+    },
+  );
 
   it("returns a book and increments availableCopies", async () => {
     const book = await createBook();
