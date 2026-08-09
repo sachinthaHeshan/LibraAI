@@ -1,0 +1,15 @@
+{
+  "name": "libraai",
+  "private": true,
+  "scripts": {
+    "dev:api": "pnpm --filter @libra/api dev",
+    "dev:web": "pnpm --filter @libra/web dev",
+    "db:generate": "pnpm --filter @libra/db generate",
+    "db:migrate": "pnpm --filter @libra/db migrate",
+    "db:seed": "pnpm --filter @libra/api seed",
+    "test:api": "pnpm --filter @libra/api test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
