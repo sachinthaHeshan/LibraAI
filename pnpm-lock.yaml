@@ -25,6 +25,9 @@ importers:
       dotenv:
         specifier: ^17.4.2
         version: 17.4.2
+      drizzle-orm:
+        specifier: ^0.39.3
+        version: 0.39.3(postgres@3.4.9)
       fastify:
         specifier: ^5.11.3
         version: 5.11.3

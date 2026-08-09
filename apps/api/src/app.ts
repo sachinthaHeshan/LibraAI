@@ -7,6 +7,7 @@ import { env } from "./env.js";
 import { AppError } from "./lib/errors.js";
 import { authPlugin } from "./plugins/auth.js";
 import { createAuthRoutes } from "./routes/auth.js";
+import { createBooksRoutes } from "./routes/books.js";
 
 export async function buildApp() {
   const app = Fastify();
@@ -29,6 +30,7 @@ export async function buildApp() {
   });
 
   await app.register(createAuthRoutes(db));
+  await app.register(createBooksRoutes(db));
 
   return app;
 }
