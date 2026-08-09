@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { books, createDb, loans, members } from "@libra/db";
 import { inArray, eq } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
-import { buildApp } from "../app.js";
+import { buildApp } from "../create-app.js";
 import { env } from "../env.js";
 
 describe("loans API", () => {
