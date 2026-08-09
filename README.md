@@ -52,3 +52,4 @@ non-development use, then run `pnpm db:seed` again if the credentials change.
 - `@libra/web` — Next.js admin interface
 - `@libra/api` — Fastify REST API
 - `@libra/db` — Drizzle schema, migrations, and database client
+# LibraAI
