@@ -8,6 +8,7 @@ import { AppError } from "./lib/errors.js";
 import { authPlugin } from "./plugins/auth.js";
 import { createAuthRoutes } from "./routes/auth.js";
 import { createBooksRoutes } from "./routes/books.js";
+import { createLoansRoutes } from "./routes/loans.js";
 import { createMembersRoutes } from "./routes/members.js";
 
 export async function buildApp() {
@@ -33,6 +34,7 @@ export async function buildApp() {
   await app.register(createAuthRoutes(db));
   await app.register(createBooksRoutes(db));
   await app.register(createMembersRoutes(db));
+  await app.register(createLoansRoutes(db));
 
   return app;
 }
