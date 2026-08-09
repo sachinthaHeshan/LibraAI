@@ -127,6 +127,32 @@ describe("loans API", () => {
     expect(response.json()).toEqual({ message: "Member is inactive" });
   });
 
+  it("rechecks member status after a concurrent deactivation", async () => {
+    const book = await createBook();
+    const member = await createMember();
+    let issuePromise: ReturnType<typeof issueLoan>;
+
+    await db.transaction(async (tx) => {
+      await tx
+        .select({ id: members.id })
+        .from(members)
+        .where(inArray(members.id, [member.id]))
+        .for("update");
+
+      issuePromise = issueLoan(book.id, member.id);
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      await tx
+        .update(members)
+        .set({ status: "inactive" })
+        .where(inArray(members.id, [member.id]));
+    });
+
+    const response = await issuePromise!;
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toEqual({ message: "Member is inactive" });
+  });
+
   it("requires a librarian-chosen due date", async () => {
     const book = await createBook();
     const member = await createMember();
@@ -137,6 +163,15 @@ describe("loans API", () => {
       headers: { authorization: `Bearer ${token}` },
       payload: { bookId: book.id, memberId: member.id },
     });
+
+    expect(response.statusCode).toBe(400);
+  });
+
+  it("rejects a due date that is not a real calendar date", async () => {
+    const book = await createBook();
+    const member = await createMember();
+
+    const response = await issueLoan(book.id, member.id, "2026-02-30");
 
     expect(response.statusCode).toBe(400);
   });

@@ -186,4 +186,53 @@ describe("books API", () => {
     await db.delete(books).where(eq(books.id, bookId));
     await db.delete(members).where(eq(members.id, member.id));
   });
+
+  it("preserves borrowed copies when total copies changes concurrently", async () => {
+    const db = createDb(env.DATABASE_URL);
+    const create = await app.inject({
+      method: "POST",
+      url: "/books",
+      headers: { authorization: `Bearer ${token}` },
+      payload: {
+        title: "The Fifth Season",
+        author: "N. K. Jemisin",
+        isbn: randomUUID(),
+        totalCopies: 2,
+      },
+    });
+    const bookId = create.json().id;
+    const patchBook = () =>
+      app.inject({
+        method: "PATCH",
+        url: `/books/${bookId}`,
+        headers: { authorization: `Bearer ${token}` },
+        payload: { totalCopies: 3 },
+      });
+    let patchPromise: ReturnType<typeof patchBook>;
+
+    await db.transaction(async (tx) => {
+      await tx
+        .select({ id: books.id })
+        .from(books)
+        .where(eq(books.id, bookId))
+        .for("update");
+
+      patchPromise = patchBook();
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      await tx
+        .update(books)
+        .set({ availableCopies: 1 })
+        .where(eq(books.id, bookId));
+    });
+
+    const patch = await patchPromise!;
+    expect(patch.statusCode).toBe(200);
+    expect(patch.json()).toMatchObject({
+      totalCopies: 3,
+      availableCopies: 2,
+    });
+
+    await db.delete(books).where(eq(books.id, bookId));
+  });
 });

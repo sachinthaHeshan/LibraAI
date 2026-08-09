@@ -1,5 +1,5 @@
 import { books, loans, members, type Db } from "@libra/db";
-import { and, eq, gt, sql } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { AppError } from "../lib/errors.js";
@@ -8,10 +8,21 @@ const loanParamsSchema = z.object({
   id: z.string().uuid(),
 });
 
+const calendarDateSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/)
+  .refine((value) => {
+    const date = new Date(`${value}T00:00:00.000Z`);
+    return (
+      !Number.isNaN(date.getTime()) &&
+      date.toISOString().slice(0, 10) === value
+    );
+  });
+
 const createLoanSchema = z.object({
   bookId: z.string().uuid(),
   memberId: z.string().uuid(),
-  dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  dueDate: calendarDateSchema,
 });
 
 const listLoansQuerySchema = z.object({
@@ -26,16 +37,12 @@ export function createLoansRoutes(db: Db): FastifyPluginAsync {
       const input = createLoanSchema.parse(request.body);
 
       const loan = await db.transaction(async (tx) => {
-        const book = await tx.query.books.findFirst({
-          where: (row, { eq }) => eq(row.id, input.bookId),
-        });
-        if (!book) {
-          throw new AppError(404, "Book not found");
-        }
-
-        const member = await tx.query.members.findFirst({
-          where: (row, { eq }) => eq(row.id, input.memberId),
-        });
+        const [member] = await tx
+          .select()
+          .from(members)
+          .where(eq(members.id, input.memberId))
+          .limit(1)
+          .for("update");
         if (!member) {
           throw new AppError(404, "Member not found");
         }
@@ -43,19 +50,26 @@ export function createLoansRoutes(db: Db): FastifyPluginAsync {
           throw new AppError(400, "Member is inactive");
         }
 
-        const [reservedBook] = await tx
-          .update(books)
-          .set({
-            availableCopies: sql`${books.availableCopies} - 1`,
-            updatedAt: new Date(),
-          })
-          .where(
-            and(eq(books.id, input.bookId), gt(books.availableCopies, 0)),
-          )
-          .returning({ id: books.id });
-        if (!reservedBook) {
+        const [book] = await tx
+          .select()
+          .from(books)
+          .where(eq(books.id, input.bookId))
+          .limit(1)
+          .for("update");
+        if (!book) {
+          throw new AppError(404, "Book not found");
+        }
+        if (book.availableCopies < 1) {
           throw new AppError(400, "No copies available");
         }
+
+        await tx
+          .update(books)
+          .set({
+            availableCopies: book.availableCopies - 1,
+            updatedAt: new Date(),
+          })
+          .where(eq(books.id, input.bookId));
 
         const [created] = await tx.insert(loans).values(input).returning();
         return created;
@@ -68,14 +82,27 @@ export function createLoansRoutes(db: Db): FastifyPluginAsync {
       const { id } = loanParamsSchema.parse(request.params);
 
       return db.transaction(async (tx) => {
-        const loan = await tx.query.loans.findFirst({
-          where: (row, { eq }) => eq(row.id, id),
-        });
+        const [loan] = await tx
+          .select()
+          .from(loans)
+          .where(eq(loans.id, id))
+          .limit(1)
+          .for("update");
         if (!loan) {
           throw new AppError(404, "Loan not found");
         }
         if (loan.status === "returned") {
           throw new AppError(400, "Loan already returned");
+        }
+
+        const [book] = await tx
+          .select()
+          .from(books)
+          .where(eq(books.id, loan.bookId))
+          .limit(1)
+          .for("update");
+        if (!book) {
+          throw new AppError(404, "Book not found");
         }
 
         const returnedAt = new Date();
@@ -91,7 +118,7 @@ export function createLoansRoutes(db: Db): FastifyPluginAsync {
         await tx
           .update(books)
           .set({
-            availableCopies: sql`${books.availableCopies} + 1`,
+            availableCopies: book.availableCopies + 1,
             updatedAt: returnedAt,
           })
           .where(eq(books.id, loan.bookId));

@@ -86,38 +86,47 @@ export function createBooksRoutes(db: Db): FastifyPluginAsync {
     app.patch("/books/:id", async (request) => {
       const { id } = bookParamsSchema.parse(request.params);
       const input = updateBookSchema.parse(request.body);
-      const current = await db.query.books.findFirst({
-        where: (book, { eq }) => eq(book.id, id),
-      });
-
-      if (!current) {
-        throw new AppError(404, "Book not found");
-      }
-
-      const borrowedCopies = current.totalCopies - current.availableCopies;
-      if (
-        input.totalCopies !== undefined &&
-        input.totalCopies < borrowedCopies
-      ) {
-        throw new AppError(400, "Total copies cannot be below borrowed copies");
-      }
-
-      const update = {
-        ...input,
-        ...(input.totalCopies === undefined
-          ? {}
-          : { availableCopies: input.totalCopies - borrowedCopies }),
-        updatedAt: new Date(),
-      };
 
       try {
-        const [book] = await db
-          .update(books)
-          .set(update)
-          .where(eq(books.id, id))
-          .returning();
+        return await db.transaction(async (tx) => {
+          const [current] = await tx
+            .select()
+            .from(books)
+            .where(eq(books.id, id))
+            .limit(1)
+            .for("update");
 
-        return book;
+          if (!current) {
+            throw new AppError(404, "Book not found");
+          }
+
+          const borrowedCopies =
+            current.totalCopies - current.availableCopies;
+          if (
+            input.totalCopies !== undefined &&
+            input.totalCopies < borrowedCopies
+          ) {
+            throw new AppError(
+              400,
+              "Total copies cannot be below borrowed copies",
+            );
+          }
+
+          const update = {
+            ...input,
+            ...(input.totalCopies === undefined
+              ? {}
+              : { availableCopies: input.totalCopies - borrowedCopies }),
+            updatedAt: new Date(),
+          };
+          const [book] = await tx
+            .update(books)
+            .set(update)
+            .where(eq(books.id, id))
+            .returning();
+
+          return book;
+        });
       } catch (error) {
         if (isUniqueViolation(error)) {
           throw new AppError(409, "ISBN already exists");
