@@ -2,8 +2,13 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import { Alert } from "@/components/Alert";
 import { AppShell } from "@/components/AppShell";
+import { EmptyState } from "@/components/EmptyState";
 import { MemberForm, type MemberInput } from "@/components/MemberForm";
+import { Modal } from "@/components/Modal";
+import { StatCard } from "@/components/StatCard";
+import { TableSkeleton } from "@/components/TableSkeleton";
 import { apiFetch } from "@/lib/api";
 
 type Member = MemberInput & {
@@ -52,7 +57,7 @@ export default function MembersPage() {
   }
 
   async function deleteMember(member: Member) {
-    if (!window.confirm(`Delete ${member.name}?`)) return;
+    if (!window.confirm(`Delete ${member.name}? This cannot be undone.`)) return;
 
     setError("");
     try {
@@ -67,126 +72,155 @@ export default function MembersPage() {
     }
   }
 
+  const activeCount = members.filter((member) => member.status === "active").length;
+
   return (
-    <AppShell>
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">Members</h1>
-          <p className="mt-1 text-sm text-slate-600">
-            Manage library memberships and contact details.
-          </p>
-        </div>
+    <AppShell
+      actions={
         <button
-          className="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500"
+          className="btn-primary text-sm"
           onClick={() => {
             setEditingMember(null);
             setFormOpen(true);
           }}
           type="button"
         >
+          <span aria-hidden>+</span>
           Add member
         </button>
+      }
+      subtitle="Directory"
+      title="Members"
+    >
+      <div className="mb-5 grid gap-4 sm:grid-cols-2">
+        <StatCard hint="All registered patrons" label="Total members" value={members.length} />
+        <StatCard hint="Can borrow books" label="Active" value={activeCount} />
       </div>
 
-      {error ? (
-        <p className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
-          {error}
-        </p>
-      ) : null}
+      {error ? <Alert message={error} onDismiss={() => setError("")} /> : null}
 
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-              <tr>
-                <th className="px-5 py-3 font-semibold">Name</th>
-                <th className="px-5 py-3 font-semibold">Email</th>
-                <th className="px-5 py-3 font-semibold">Phone</th>
-                <th className="px-5 py-3 font-semibold">Status</th>
-                <th className="px-5 py-3 font-semibold">Member since</th>
-                <th className="px-5 py-3 text-right font-semibold">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {members.map((member) => (
-                <tr className="text-slate-700" key={member.id}>
-                  <td className="px-5 py-4 font-medium text-slate-900">
-                    {member.name}
-                  </td>
-                  <td className="px-5 py-4">{member.email}</td>
-                  <td className="px-5 py-4">{member.phone || "—"}</td>
-                  <td className="px-5 py-4">
-                    <span
-                      className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                        member.status === "active"
-                          ? "bg-emerald-50 text-emerald-700"
-                          : "bg-slate-100 text-slate-600"
-                      }`}
-                    >
-                      {member.status}
-                    </span>
-                  </td>
-                  <td className="px-5 py-4">{member.membershipDate}</td>
-                  <td className="px-5 py-4 text-right">
-                    <button
-                      className="mr-3 font-medium text-indigo-600 hover:text-indigo-800"
-                      onClick={() => {
-                        setEditingMember(member);
-                        setFormOpen(true);
-                      }}
-                      type="button"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="font-medium text-red-600 hover:text-red-800"
-                      onClick={() => void deleteMember(member)}
-                      type="button"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <section className="card overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4">
+          <h2 className="text-base font-bold text-ink">Member directory</h2>
         </div>
+
         {loading ? (
-          <p className="px-5 py-10 text-center text-sm text-slate-500">Loading…</p>
+          <TableSkeleton cols={5} rows={5} />
         ) : members.length === 0 ? (
-          <p className="px-5 py-10 text-center text-sm text-slate-500">
-            No members found.
-          </p>
-        ) : null}
-      </div>
+          <EmptyState
+            actionLabel="Add member"
+            description="Create a member profile before issuing a loan."
+            onAction={() => {
+              setEditingMember(null);
+              setFormOpen(true);
+            }}
+            title="No members yet"
+          />
+        ) : (
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Phone</th>
+                  <th>Status</th>
+                  <th>Member since</th>
+                  <th className="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {members.map((member) => (
+                  <tr key={member.id}>
+                    <td>
+                      <div className="flex items-center gap-3">
+                        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-accent-soft text-xs font-bold text-accent">
+                          {member.name.slice(0, 1).toUpperCase()}
+                        </span>
+                        <span className="font-semibold text-ink">{member.name}</span>
+                      </div>
+                    </td>
+                    <td>{member.email}</td>
+                    <td>{member.phone || "—"}</td>
+                    <td>
+                      <span className="badge">
+                        <span
+                          className={`dot ${
+                            member.status === "active" ? "dot-ok" : "dot-warn"
+                          }`}
+                        />
+                        {member.status}
+                      </span>
+                    </td>
+                    <td>{member.membershipDate}</td>
+                    <td className="text-right">
+                      <div className="inline-flex items-center gap-1">
+                        <button
+                          aria-label={`Edit ${member.name}`}
+                          className="btn-icon"
+                          onClick={() => {
+                            setEditingMember(member);
+                            setFormOpen(true);
+                          }}
+                          type="button"
+                        >
+                          <svg aria-hidden className="h-4 w-4" fill="none" viewBox="0 0 24 24">
+                            <path
+                              d="m5 16.5 9.8-9.8a1.5 1.5 0 0 1 2.1 0l1.4 1.4a1.5 1.5 0 0 1 0 2.1L8.5 20H5v-3.5Z"
+                              stroke="currentColor"
+                              strokeWidth="1.6"
+                            />
+                          </svg>
+                        </button>
+                        <button
+                          aria-label={`Delete ${member.name}`}
+                          className="btn-icon btn-icon-danger"
+                          onClick={() => void deleteMember(member)}
+                          type="button"
+                        >
+                          <svg aria-hidden className="h-4 w-4" fill="none" viewBox="0 0 24 24">
+                            <path
+                              d="M5 7h14M10 11v5M14 11v5M9 7l.6-1.5A1 1 0 0 1 10.5 5h3a1 1 0 0 1 .9.5L15 7m-8 0 1 11a2 2 0 0 0 2 1.8h4a2 2 0 0 0 2-1.8l1-11"
+                              stroke="currentColor"
+                              strokeLinecap="round"
+                              strokeWidth="1.6"
+                            />
+                          </svg>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
 
       {formOpen ? (
-        <div
-          aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4"
-          role="dialog"
+        <Modal
+          onClose={() => {
+            setFormOpen(false);
+            setEditingMember(null);
+          }}
+          title={editingMember ? "Edit member" : "Add member"}
         >
-          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
-            <h2 className="mb-5 text-xl font-bold text-slate-900">
-              {editingMember ? "Edit member" : "Add member"}
-            </h2>
-            <MemberForm
-              initialValues={
-                editingMember
-                  ? {
-                      ...editingMember,
-                      phone: editingMember.phone ?? undefined,
-                    }
-                  : undefined
-              }
-              onCancel={() => {
-                setFormOpen(false);
-                setEditingMember(null);
-              }}
-              onSubmit={saveMember}
-            />
-          </div>
-        </div>
+          <MemberForm
+            initialValues={
+              editingMember
+                ? {
+                    ...editingMember,
+                    phone: editingMember.phone ?? undefined,
+                  }
+                : undefined
+            }
+            onCancel={() => {
+              setFormOpen(false);
+              setEditingMember(null);
+            }}
+            onSubmit={saveMember}
+          />
+        </Modal>
       ) : null}
     </AppShell>
   );

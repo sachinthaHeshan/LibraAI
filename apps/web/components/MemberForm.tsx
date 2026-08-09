@@ -16,9 +16,6 @@ type MemberFormProps = {
   onSubmit: (values: MemberInput) => Promise<void>;
 };
 
-const fieldClass =
-  "mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100";
-
 export function MemberForm({
   initialValues,
   onCancel,
@@ -62,50 +59,50 @@ export function MemberForm({
 
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
-      <label className="block text-sm font-medium text-slate-700">
+      <label className="block text-sm font-semibold text-ink">
         Name
         <input
           autoFocus
-          className={fieldClass}
+          className="field field-box mt-1.5"
           onChange={(event) => setName(event.target.value)}
           required
           value={name}
         />
       </label>
-      <label className="block text-sm font-medium text-slate-700">
+      <label className="block text-sm font-semibold text-ink">
         Email
         <input
-          className={fieldClass}
+          className="field field-box mt-1.5"
           onChange={(event) => setEmail(event.target.value)}
           required
           type="email"
           value={email}
         />
       </label>
-      <label className="block text-sm font-medium text-slate-700">
+      <label className="block text-sm font-semibold text-ink">
         Phone
         <input
-          className={fieldClass}
+          className="field field-box mt-1.5"
           onChange={(event) => setPhone(event.target.value)}
           type="tel"
           value={phone}
         />
       </label>
       <div className="grid gap-4 sm:grid-cols-2">
-        <label className="block text-sm font-medium text-slate-700">
+        <label className="block text-sm font-semibold text-ink">
           Membership date
           <input
-            className={fieldClass}
+            className="field field-box mt-1.5"
             onChange={(event) => setMembershipDate(event.target.value)}
             required
             type="date"
             value={membershipDate}
           />
         </label>
-        <label className="block text-sm font-medium text-slate-700">
+        <label className="block text-sm font-semibold text-ink">
           Status
           <select
-            className={fieldClass}
+            className="field field-box mt-1.5"
             onChange={(event) =>
               setStatus(event.target.value as "active" | "inactive")
             }
@@ -117,23 +114,15 @@ export function MemberForm({
         </label>
       </div>
       {error ? (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
+        <p className="rounded-2xl bg-[#ffecea] px-3 py-2 text-sm font-medium text-danger" role="alert">
           {error}
         </p>
       ) : null}
       <div className="flex justify-end gap-3 pt-2">
-        <button
-          className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          onClick={onCancel}
-          type="button"
-        >
+        <button className="btn-ghost text-sm" onClick={onCancel} type="button">
           Cancel
         </button>
-        <button
-          className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 disabled:opacity-60"
-          disabled={submitting}
-          type="submit"
-        >
+        <button className="btn-primary text-sm" disabled={submitting} type="submit">
           {submitting ? "Saving…" : "Save member"}
         </button>
       </div>

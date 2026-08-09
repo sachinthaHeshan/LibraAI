@@ -8,6 +8,7 @@ import { AppError } from "./lib/errors.js";
 import { authPlugin } from "./plugins/auth.js";
 import { createAuthRoutes } from "./routes/auth.js";
 import { createBooksRoutes } from "./routes/books.js";
+import { createHealthRoutes } from "./routes/health.js";
 import { createLoansRoutes } from "./routes/loans.js";
 import { createMembersRoutes } from "./routes/members.js";
 
@@ -15,7 +16,12 @@ export async function buildApp() {
   const app = Fastify();
   const db = createDb(env.DATABASE_URL);
 
-  await app.register(cors, { origin: env.CORS_ORIGIN });
+  await app.register(cors, {
+    origin: true,
+    methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+  });
   await app.register(jwt, {
     secret: env.JWT_SECRET,
     sign: { expiresIn: "8h" },
@@ -34,6 +40,7 @@ export async function buildApp() {
     return reply.status(500).send({ message: "Internal server error" });
   });
 
+  await app.register(createHealthRoutes());
   await app.register(createAuthRoutes(db));
   await app.register(createBooksRoutes(db));
   await app.register(createMembersRoutes(db));

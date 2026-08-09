@@ -26,9 +26,6 @@ type IssueLoanFormProps = {
   onSubmit: (values: IssueLoanInput) => Promise<void>;
 };
 
-const fieldClass =
-  "mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 disabled:bg-slate-100 disabled:text-slate-500";
-
 function defaultDueDate() {
   const dueDate = new Date();
   dueDate.setDate(dueDate.getDate() + 14);
@@ -71,15 +68,18 @@ export function IssueLoanForm({
   }
 
   return (
-    <form
-      className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
-      onSubmit={handleSubmit}
-    >
+    <form className="card p-5 sm:p-6" onSubmit={handleSubmit}>
+      <div className="mb-4">
+        <h2 className="text-lg font-bold text-ink">Issue a book</h2>
+        <p className="mt-1 text-sm font-medium text-muted">
+          Pick an available title, an active member, and a due date.
+        </p>
+      </div>
       <div className="grid gap-4 lg:grid-cols-[1fr_1fr_auto_auto] lg:items-end">
-        <label className="block text-sm font-medium text-slate-700">
+        <label className="block text-sm font-semibold text-ink">
           Book
           <select
-            className={fieldClass}
+            className="field field-box mt-1.5 disabled:bg-[#f1f4fb] disabled:text-muted"
             disabled={availableBooks.length === 0}
             onChange={(event) => setBookId(event.target.value)}
             required
@@ -98,10 +98,10 @@ export function IssueLoanForm({
           </select>
         </label>
 
-        <label className="block text-sm font-medium text-slate-700">
+        <label className="block text-sm font-semibold text-ink">
           Member
           <select
-            className={fieldClass}
+            className="field field-box mt-1.5 disabled:bg-[#f1f4fb] disabled:text-muted"
             disabled={activeMembers.length === 0}
             onChange={(event) => setMemberId(event.target.value)}
             required
@@ -120,10 +120,10 @@ export function IssueLoanForm({
           </select>
         </label>
 
-        <label className="block text-sm font-medium text-slate-700">
+        <label className="block text-sm font-semibold text-ink">
           Due date
           <input
-            className={fieldClass}
+            className="field field-box mt-1.5"
             min={new Date().toISOString().slice(0, 10)}
             onChange={(event) => setDueDate(event.target.value)}
             required
@@ -133,7 +133,7 @@ export function IssueLoanForm({
         </label>
 
         <button
-          className="rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+          className="btn-primary text-sm"
           disabled={!canIssue || submitting}
           type="submit"
         >
@@ -143,7 +143,7 @@ export function IssueLoanForm({
 
       {error ? (
         <p
-          className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700"
+          className="mt-4 rounded-2xl bg-[#ffecea] px-3 py-2 text-sm font-medium text-danger"
           role="alert"
         >
           {error}

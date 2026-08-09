@@ -2,13 +2,17 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import { Alert } from "@/components/Alert";
 import { AppShell } from "@/components/AppShell";
+import { EmptyState } from "@/components/EmptyState";
 import {
   IssueLoanForm,
   type IssueLoanInput,
   type LoanBookOption,
   type LoanMemberOption,
 } from "@/components/IssueLoanForm";
+import { StatCard } from "@/components/StatCard";
+import { TableSkeleton } from "@/components/TableSkeleton";
 import { apiFetch } from "@/lib/api";
 
 type Loan = {
@@ -33,6 +37,7 @@ export default function LoansPage() {
   const [returningId, setReturningId] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
 
   const loadLoansData = useCallback(async () => {
     setLoading(true);
@@ -67,15 +72,18 @@ export default function LoansPage() {
       method: "POST",
       body: JSON.stringify(values),
     });
+    setNotice("Book issued successfully.");
     await loadLoansData();
   }
 
   async function returnLoan(loan: Loan) {
     setReturningId(loan.id);
     setError("");
+    setNotice("");
 
     try {
       await apiFetch(`/loans/${loan.id}/return`, { method: "POST" });
+      setNotice(`Returned “${loan.book.title}”.`);
       await loadLoansData();
     } catch (returnError) {
       setError(
@@ -88,91 +96,104 @@ export default function LoansPage() {
     }
   }
 
+  const overdueCount = loans.filter((loan) => loan.overdue).length;
+
   return (
-    <AppShell>
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-slate-900">Loans</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          Issue available books and manage current borrowing.
-        </p>
+    <AppShell
+      subtitle="Lending"
+      title="Loans"
+    >
+      <div className="mb-5 grid gap-4 sm:grid-cols-2">
+        <StatCard hint="Out with members" label="Active loans" value={loans.length} />
+        <StatCard hint="Past due date" label="Overdue" value={overdueCount} />
       </div>
 
       <IssueLoanForm books={books} members={members} onSubmit={issueLoan} />
 
-      <div className="mb-4 mt-8 flex items-end justify-between">
-        <div>
-          <h2 className="text-xl font-bold text-slate-900">Borrowed books</h2>
-          <p className="mt-1 text-sm text-slate-600">
-            {loans.length} active {loans.length === 1 ? "loan" : "loans"}
-          </p>
-        </div>
-      </div>
-
-      {error ? (
-        <p
-          className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700"
-          role="alert"
-        >
-          {error}
-        </p>
-      ) : null}
-
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-              <tr>
-                <th className="px-5 py-3 font-semibold">Book</th>
-                <th className="px-5 py-3 font-semibold">Member</th>
-                <th className="px-5 py-3 font-semibold">Due date</th>
-                <th className="px-5 py-3 font-semibold">Status</th>
-                <th className="px-5 py-3 text-right font-semibold">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {loans.map((loan) => (
-                <tr className="text-slate-700" key={loan.id}>
-                  <td className="px-5 py-4 font-medium text-slate-900">
-                    {loan.book.title}
-                  </td>
-                  <td className="px-5 py-4">{loan.member.name}</td>
-                  <td className="px-5 py-4">{loan.dueDate}</td>
-                  <td className="px-5 py-4">
-                    {loan.overdue ? (
-                      <span className="rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700">
-                        Overdue
-                      </span>
-                    ) : (
-                      <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-                        Borrowed
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-5 py-4 text-right">
-                    <button
-                      className="font-medium text-indigo-600 hover:text-indigo-800 disabled:opacity-60"
-                      disabled={returningId === loan.id}
-                      onClick={() => void returnLoan(loan)}
-                      type="button"
-                    >
-                      {returningId === loan.id ? "Returning…" : "Return"}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {loading ? (
-          <p className="px-5 py-10 text-center text-sm text-slate-500">
-            Loading…
-          </p>
-        ) : loans.length === 0 ? (
-          <p className="px-5 py-10 text-center text-sm text-slate-500">
-            No borrowed books.
-          </p>
+      <div className="mt-5">
+        {error ? <Alert message={error} onDismiss={() => setError("")} /> : null}
+        {notice ? (
+          <div
+            className="mb-4 rounded-xl border border-[#bbf7d0] bg-success-soft px-4 py-3 text-sm font-medium text-[#15803d]"
+            role="status"
+          >
+            {notice}
+          </div>
         ) : null}
       </div>
+
+      <section className="card overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4">
+          <div>
+            <h2 className="text-base font-bold text-ink">Borrowed books</h2>
+            <p className="mt-1 text-sm text-muted">
+              {loans.length} active {loans.length === 1 ? "loan" : "loans"}
+            </p>
+          </div>
+        </div>
+
+        {loading ? (
+          <TableSkeleton cols={4} rows={5} />
+        ) : loans.length === 0 ? (
+          <EmptyState
+            description="Issue a book above to see it listed here with its due date."
+            title="Nothing borrowed right now"
+          />
+        ) : (
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Book</th>
+                  <th>Member</th>
+                  <th>Due date</th>
+                  <th>Status</th>
+                  <th className="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loans.map((loan) => (
+                  <tr key={loan.id}>
+                    <td className="font-semibold text-ink">{loan.book.title}</td>
+                    <td>
+                      <div className="flex items-center gap-3">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#c7d2fe] text-xs font-bold text-[#3730a3]">
+                          {loan.member.name.slice(0, 1).toUpperCase()}
+                        </span>
+                        {loan.member.name}
+                      </div>
+                    </td>
+                    <td>{loan.dueDate}</td>
+                    <td>
+                      {loan.overdue ? (
+                        <span className="badge">
+                          <span className="dot dot-danger" />
+                          Overdue
+                        </span>
+                      ) : (
+                        <span className="badge">
+                          <span className="dot dot-ok" />
+                          Borrowed
+                        </span>
+                      )}
+                    </td>
+                    <td className="text-right">
+                      <button
+                        className="btn-primary text-sm"
+                        disabled={returningId === loan.id}
+                        onClick={() => void returnLoan(loan)}
+                        type="button"
+                      >
+                        {returningId === loan.id ? "Returning…" : "Return"}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
     </AppShell>
   );
 }

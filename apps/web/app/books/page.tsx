@@ -2,8 +2,13 @@
 
 import { type FormEvent, useCallback, useEffect, useState } from "react";
 
+import { Alert } from "@/components/Alert";
 import { AppShell } from "@/components/AppShell";
 import { BookForm, type BookInput } from "@/components/BookForm";
+import { EmptyState } from "@/components/EmptyState";
+import { Modal } from "@/components/Modal";
+import { StatCard } from "@/components/StatCard";
+import { TableSkeleton } from "@/components/TableSkeleton";
 import { apiFetch } from "@/lib/api";
 
 type Book = BookInput & {
@@ -21,24 +26,34 @@ export default function BooksPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const loadBooks = useCallback(async (search = activeQuery) => {
-    setLoading(true);
-    setError("");
-    try {
-      const suffix = search ? `?q=${encodeURIComponent(search)}` : "";
-      setBooks(await apiFetch<Book[]>(`/books${suffix}`));
-    } catch (loadError) {
-      setError(
-        loadError instanceof Error ? loadError.message : "Unable to load books",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [activeQuery]);
+  const loadBooks = useCallback(
+    async (search = activeQuery) => {
+      setLoading(true);
+      setError("");
+      try {
+        const suffix = search ? `?q=${encodeURIComponent(search)}` : "";
+        setBooks(await apiFetch<Book[]>(`/books${suffix}`));
+      } catch (loadError) {
+        setError(
+          loadError instanceof Error ? loadError.message : "Unable to load books",
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+    [activeQuery],
+  );
 
   useEffect(() => {
     void loadBooks();
   }, [loadBooks]);
+
+  useEffect(() => {
+    const handle = window.setTimeout(() => {
+      setActiveQuery(query.trim());
+    }, 280);
+    return () => window.clearTimeout(handle);
+  }, [query]);
 
   function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -56,7 +71,7 @@ export default function BooksPage() {
   }
 
   async function deleteBook(book: Book) {
-    if (!window.confirm(`Delete “${book.title}”?`)) return;
+    if (!window.confirm(`Delete “${book.title}”? This cannot be undone.`)) return;
 
     setError("");
     try {
@@ -71,132 +86,217 @@ export default function BooksPage() {
     }
   }
 
+  const available = books.reduce((sum, book) => sum + book.availableCopies, 0);
+  const total = books.reduce((sum, book) => sum + book.totalCopies, 0);
+  const out = total - available;
+
   return (
-    <AppShell>
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">Books</h1>
-          <p className="mt-1 text-sm text-slate-600">
-            Manage titles and catalogue availability.
-          </p>
-        </div>
+    <AppShell
+      actions={
         <button
-          className="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500"
+          className="btn-primary text-sm"
           onClick={() => {
             setEditingBook(null);
             setFormOpen(true);
           }}
           type="button"
         >
+          <span aria-hidden>+</span>
           Add book
         </button>
+      }
+      search={
+        <form className="relative max-w-md" onSubmit={handleSearch}>
+          <span className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-muted">
+            <svg aria-hidden className="h-4 w-4" fill="none" viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="6.5" stroke="currentColor" strokeWidth="1.6" />
+              <path
+                d="m16 16 3.5 3.5"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeWidth="1.6"
+              />
+            </svg>
+          </span>
+          <input
+            aria-label="Search books"
+            className="field pl-11"
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search title, author, or ISBN"
+            value={query}
+          />
+          {query ? (
+            <button
+              aria-label="Clear search"
+              className="absolute inset-y-0 right-2 my-auto flex h-8 w-8 items-center justify-center rounded-lg text-muted hover:bg-white"
+              onClick={() => setQuery("")}
+              type="button"
+            >
+              ×
+            </button>
+          ) : null}
+        </form>
+      }
+      subtitle="Catalogue"
+      title="Books"
+    >
+      <div className="mb-5 grid gap-4 sm:grid-cols-3">
+        <StatCard hint="In catalogue" label="Titles" value={books.length} />
+        <StatCard hint="Ready to borrow" label="Available copies" value={available} />
+        <StatCard hint="Currently out" label="On loan" value={out} />
       </div>
 
-      <form className="mb-5 flex max-w-xl gap-2" onSubmit={handleSearch}>
-        <input
-          aria-label="Search books"
-          className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search title, author, or ISBN"
-          value={query}
-        />
-        <button
-          className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-          type="submit"
-        >
-          Search
-        </button>
-      </form>
+      {error ? <Alert message={error} onDismiss={() => setError("")} /> : null}
 
-      {error ? (
-        <p className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
-          {error}
-        </p>
-      ) : null}
-
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-              <tr>
-                <th className="px-5 py-3 font-semibold">Title</th>
-                <th className="px-5 py-3 font-semibold">Author</th>
-                <th className="px-5 py-3 font-semibold">ISBN</th>
-                <th className="px-5 py-3 font-semibold">Available / total</th>
-                <th className="px-5 py-3 text-right font-semibold">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {books.map((book) => (
-                <tr className="text-slate-700" key={book.id}>
-                  <td className="px-5 py-4 font-medium text-slate-900">
-                    {book.title}
-                  </td>
-                  <td className="px-5 py-4">{book.author}</td>
-                  <td className="px-5 py-4 font-mono text-xs">{book.isbn}</td>
-                  <td className="px-5 py-4">
-                    {book.availableCopies} / {book.totalCopies}
-                  </td>
-                  <td className="px-5 py-4 text-right">
-                    <button
-                      className="mr-3 font-medium text-indigo-600 hover:text-indigo-800"
-                      onClick={() => {
-                        setEditingBook(book);
-                        setFormOpen(true);
-                      }}
-                      type="button"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="font-medium text-red-600 hover:text-red-800"
-                      onClick={() => void deleteBook(book)}
-                      type="button"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {loading ? (
-          <p className="px-5 py-10 text-center text-sm text-slate-500">Loading…</p>
-        ) : books.length === 0 ? (
-          <p className="px-5 py-10 text-center text-sm text-slate-500">
-            No books found.
-          </p>
-        ) : null}
-      </div>
-
-      {formOpen ? (
-        <div
-          aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4"
-          role="dialog"
-        >
-          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
-            <h2 className="mb-5 text-xl font-bold text-slate-900">
-              {editingBook ? "Edit book" : "Add book"}
-            </h2>
-            <BookForm
-              initialValues={
-                editingBook
-                  ? {
-                      ...editingBook,
-                      publishedYear: editingBook.publishedYear ?? undefined,
-                    }
-                  : undefined
-              }
-              onCancel={() => {
-                setFormOpen(false);
-                setEditingBook(null);
-              }}
-              onSubmit={saveBook}
-            />
+      <section className="card overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4">
+          <div>
+            <h2 className="text-base font-bold text-ink">Catalogue</h2>
+            <p className="mt-1 text-sm text-muted">
+              {activeQuery
+                ? `Results for “${activeQuery}”`
+                : `${books.length} ${books.length === 1 ? "title" : "titles"}`}
+            </p>
           </div>
         </div>
+
+        {loading ? (
+          <TableSkeleton cols={4} rows={6} />
+        ) : books.length === 0 ? (
+          <EmptyState
+            actionLabel={activeQuery ? undefined : "Add book"}
+            description={
+              activeQuery
+                ? "Try another title, author, or ISBN."
+                : "Add your first title to start lending."
+            }
+            onAction={
+              activeQuery
+                ? undefined
+                : () => {
+                    setEditingBook(null);
+                    setFormOpen(true);
+                  }
+            }
+            title={activeQuery ? "No matches" : "No books yet"}
+          />
+        ) : (
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Author</th>
+                  <th>ISBN</th>
+                  <th>Availability</th>
+                  <th className="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {books.map((book) => {
+                  const ratio =
+                    book.totalCopies > 0
+                      ? (book.availableCopies / book.totalCopies) * 100
+                      : 0;
+
+                  const status =
+                    book.availableCopies === 0
+                      ? { label: "Out of stock", tone: "dot-danger" }
+                      : ratio <= 25
+                        ? { label: "Low quantity", tone: "dot-warn" }
+                        : { label: "In stock", tone: "dot-ok" };
+
+                  return (
+                    <tr key={book.id}>
+                      <td>
+                        <div className="flex items-center gap-3">
+                          <span className="h-8 w-8 rounded-lg bg-gradient-to-br from-[#60a5fa] to-[#2563eb]" />
+                          <span className="font-semibold text-ink">{book.title}</span>
+                        </div>
+                      </td>
+                      <td>{book.author}</td>
+                      <td className="font-mono text-xs text-muted">{book.isbn}</td>
+                      <td>
+                        <div className="mb-1.5 text-sm font-medium text-ink">
+                          {book.availableCopies} / {book.totalCopies}
+                        </div>
+                        <div className="meter" title={`${Math.round(ratio)}% available`}>
+                          <span style={{ width: `${ratio}%` }} />
+                        </div>
+                        <div className="badge mt-2">
+                          <span className={`dot ${status.tone}`} />
+                          {status.label}
+                        </div>
+                      </td>
+                      <td className="text-right">
+                        <div className="inline-flex items-center gap-1">
+                          <button
+                            aria-label={`Edit ${book.title}`}
+                            className="btn-icon"
+                            onClick={() => {
+                              setEditingBook(book);
+                              setFormOpen(true);
+                            }}
+                            type="button"
+                          >
+                            <svg aria-hidden className="h-4 w-4" fill="none" viewBox="0 0 24 24">
+                              <path
+                                d="m5 16.5 9.8-9.8a1.5 1.5 0 0 1 2.1 0l1.4 1.4a1.5 1.5 0 0 1 0 2.1L8.5 20H5v-3.5Z"
+                                stroke="currentColor"
+                                strokeWidth="1.6"
+                              />
+                            </svg>
+                          </button>
+                          <button
+                            aria-label={`Delete ${book.title}`}
+                            className="btn-icon btn-icon-danger"
+                            onClick={() => void deleteBook(book)}
+                            type="button"
+                          >
+                            <svg aria-hidden className="h-4 w-4" fill="none" viewBox="0 0 24 24">
+                              <path
+                                d="M5 7h14M10 11v5M14 11v5M9 7l.6-1.5A1 1 0 0 1 10.5 5h3a1 1 0 0 1 .9.5L15 7m-8 0 1 11a2 2 0 0 0 2 1.8h4a2 2 0 0 0 2-1.8l1-11"
+                                stroke="currentColor"
+                                strokeLinecap="round"
+                                strokeWidth="1.6"
+                              />
+                            </svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      {formOpen ? (
+        <Modal
+          onClose={() => {
+            setFormOpen(false);
+            setEditingBook(null);
+          }}
+          title={editingBook ? "Edit book" : "Add book"}
+        >
+          <BookForm
+            initialValues={
+              editingBook
+                ? {
+                    ...editingBook,
+                    publishedYear: editingBook.publishedYear ?? undefined,
+                  }
+                : undefined
+            }
+            onCancel={() => {
+              setFormOpen(false);
+              setEditingBook(null);
+            }}
+            onSubmit={saveBook}
+          />
+        </Modal>
       ) : null}
     </AppShell>
   );

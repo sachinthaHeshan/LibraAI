@@ -9,12 +9,15 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace(getToken() ? "/books" : "/login");
+    router.replace(getToken() ? "/overview" : "/login");
   }, [router]);
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-50">
-      <p className="text-sm text-slate-500">Loading…</p>
+    <main className="flex min-h-screen items-center justify-center bg-canvas">
+      <div className="flex flex-col items-center gap-3">
+        <div className="skeleton h-10 w-10 rounded-xl" />
+        <p className="text-sm font-medium text-muted">Loading LibraAI…</p>
+      </div>
     </main>
   );
 }
