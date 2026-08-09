@@ -1,5 +1,33 @@
 import { clearToken, getToken } from "./auth";
 
+async function parseResponse<T>(response: Response): Promise<T> {
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    throw new Error(body.message ?? `Request failed (${response.status})`);
+  }
+
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  return response.json() as Promise<T>;
+}
+
+export async function publicApiFetch<T>(
+  path: string,
+  init: RequestInit = {},
+): Promise<T> {
+  const headers = new Headers(init.headers);
+  headers.set("Content-Type", "application/json");
+
+  const response = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}${path}`,
+    { ...init, headers },
+  );
+
+  return parseResponse<T>(response);
+}
+
 export async function apiFetch<T>(
   path: string,
   init: RequestInit = {},
@@ -25,14 +53,5 @@ export async function apiFetch<T>(
     throw new Error("Unauthorized");
   }
 
-  if (!response.ok) {
-    const body = await response.json().catch(() => ({}));
-    throw new Error(body.message ?? `Request failed (${response.status})`);
-  }
-
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
-  return response.json() as Promise<T>;
+  return parseResponse<T>(response);
 }

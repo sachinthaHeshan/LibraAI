@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { apiFetch } from "./api";
+import { apiFetch, publicApiFetch } from "./api";
 import { clearToken, getToken, setToken } from "./auth";
 
 class MemoryStorage implements Storage {
@@ -96,5 +96,27 @@ describe("apiFetch", () => {
     await expect(apiFetch("/books")).rejects.toThrow("Unauthorized");
     expect(getToken()).toBeNull();
     expect(window.location.href).toBe("http://localhost:3000/login");
+  });
+
+  it("surfaces public endpoint errors without redirecting", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ message: "Invalid credentials" }), {
+          status: 401,
+        }),
+      ),
+    );
+
+    await expect(
+      publicApiFetch("/auth/login", {
+        method: "POST",
+        body: JSON.stringify({
+          email: "admin@example.com",
+          password: "wrong",
+        }),
+      }),
+    ).rejects.toThrow("Invalid credentials");
+    expect(window.location.href).toBe("/");
   });
 });

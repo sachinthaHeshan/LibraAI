@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
-import { apiFetch } from "@/lib/api";
+import { publicApiFetch } from "@/lib/api";
 import { setToken } from "@/lib/auth";
 
 type LoginResponse = {
@@ -23,7 +23,7 @@ export default function LoginPage() {
     setSubmitting(true);
 
     try {
-      const { token } = await apiFetch<LoginResponse>("/auth/login", {
+      const { token } = await publicApiFetch<LoginResponse>("/auth/login", {
         method: "POST",
         body: JSON.stringify({ email, password }),
       });
