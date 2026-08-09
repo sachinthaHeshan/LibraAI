@@ -31,4 +31,15 @@ describe("POST /auth/login", () => {
     });
     expect(res.statusCode).toBe(401);
   });
+
+  it("returns 400 for an invalid login body", async () => {
+    const res = await app.inject({
+      method: "POST",
+      url: "/auth/login",
+      payload: { email: "not-an-email", password: "" },
+    });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.json()).toEqual({ message: "Invalid request" });
+  });
 });
