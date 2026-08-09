@@ -1,7 +1,7 @@
 import cors from "@fastify/cors";
 import jwt from "@fastify/jwt";
 import { createDb } from "@libra/db";
-import Fastify from "fastify";
+import Fastify, { type FastifyInstance } from "fastify";
 import { ZodError } from "zod";
 import { env } from "./env.js";
 import { AppError } from "./lib/errors.js";
@@ -12,8 +12,7 @@ import { createHealthRoutes } from "./routes/health.js";
 import { createLoansRoutes } from "./routes/loans.js";
 import { createMembersRoutes } from "./routes/members.js";
 
-export async function buildApp() {
-  const app = Fastify();
+export async function buildApp(app: FastifyInstance = Fastify()) {
   const db = createDb(env.DATABASE_URL);
 
   await app.register(cors, {
