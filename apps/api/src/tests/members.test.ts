@@ -184,10 +184,71 @@ describe("members API", () => {
     });
 
     expect(response.statusCode).toBe(409);
-    expect(response.json()).toEqual({ message: "Member has open loans" });
+    expect(response.json()).toEqual({ message: "Member has loan history" });
 
     await db.delete(loans).where(eq(loans.id, loan.id));
     await db.delete(books).where(eq(books.id, book.id));
     await db.delete(members).where(eq(members.id, member.id));
+  });
+
+  it("returns 409 when deleting a member with returned loan history", async () => {
+    const db = createDb(env.DATABASE_URL);
+    const [member] = await db
+      .insert(members)
+      .values({
+        name: "Returned Member Test",
+        email: `${randomUUID()}@example.com`,
+        membershipDate: "2026-08-09",
+      })
+      .returning();
+    const [book] = await db
+      .insert(books)
+      .values({
+        title: "A Wizard of Earthsea",
+        author: "Ursula K. Le Guin",
+        isbn: randomUUID(),
+        totalCopies: 1,
+        availableCopies: 1,
+      })
+      .returning();
+    const [loan] = await db
+      .insert(loans)
+      .values({
+        bookId: book.id,
+        memberId: member.id,
+        dueDate: "2026-08-23",
+        returnedAt: new Date(),
+        status: "returned",
+      })
+      .returning();
+
+    const response = await app.inject({
+      method: "DELETE",
+      url: `/members/${member.id}`,
+      headers: { authorization: `Bearer ${token}` },
+    });
+
+    expect(response.statusCode).toBe(409);
+    expect(response.json()).toEqual({ message: "Member has loan history" });
+
+    await db.delete(loans).where(eq(loans.id, loan.id));
+    await db.delete(books).where(eq(books.id, book.id));
+    await db.delete(members).where(eq(members.id, member.id));
+  });
+
+  it("rejects an invalid membership calendar date", async () => {
+    const response = await app.inject({
+      method: "POST",
+      url: "/members",
+      headers: { authorization: `Bearer ${token}` },
+      payload: {
+        name: "Invalid Date Test",
+        email: `${randomUUID()}@example.com`,
+        membershipDate: "2026-02-30",
+      },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toEqual({ message: "Invalid request" });
   });
 });

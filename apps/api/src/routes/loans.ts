@@ -2,26 +2,12 @@ import { books, loans, members, type Db } from "@libra/db";
 import { and, eq } from "drizzle-orm";
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
+import { calendarDateSchema } from "../lib/calendar-date.js";
 import { AppError } from "../lib/errors.js";
 
 const loanParamsSchema = z.object({
   id: z.string().uuid(),
 });
-
-const calendarDateSchema = z
-  .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/)
-  .refine((value) => {
-    if (value.startsWith("0000-")) {
-      return false;
-    }
-
-    const date = new Date(`${value}T00:00:00.000Z`);
-    return (
-      !Number.isNaN(date.getTime()) &&
-      date.toISOString().slice(0, 10) === value
-    );
-  });
 
 const createLoanSchema = z.object({
   bookId: z.string().uuid(),

@@ -180,7 +180,54 @@ describe("books API", () => {
     });
 
     expect(response.statusCode).toBe(409);
-    expect(response.json()).toEqual({ message: "Book has open loans" });
+    expect(response.json()).toEqual({ message: "Book has loan history" });
+
+    await db.delete(loans).where(eq(loans.id, loan.id));
+    await db.delete(books).where(eq(books.id, bookId));
+    await db.delete(members).where(eq(members.id, member.id));
+  });
+
+  it("returns 409 when deleting a book with returned loan history", async () => {
+    const db = createDb(env.DATABASE_URL);
+    const create = await app.inject({
+      method: "POST",
+      url: "/books",
+      headers: { authorization: `Bearer ${token}` },
+      payload: {
+        title: "Parable of the Sower",
+        author: "Octavia E. Butler",
+        isbn: randomUUID(),
+        totalCopies: 1,
+      },
+    });
+    const bookId = create.json().id;
+    const [member] = await db
+      .insert(members)
+      .values({
+        name: "Returned Book Test",
+        email: `${randomUUID()}@example.com`,
+        membershipDate: "2026-08-09",
+      })
+      .returning();
+    const [loan] = await db
+      .insert(loans)
+      .values({
+        bookId,
+        memberId: member.id,
+        dueDate: "2026-08-23",
+        returnedAt: new Date(),
+        status: "returned",
+      })
+      .returning();
+
+    const response = await app.inject({
+      method: "DELETE",
+      url: `/books/${bookId}`,
+      headers: { authorization: `Bearer ${token}` },
+    });
+
+    expect(response.statusCode).toBe(409);
+    expect(response.json()).toEqual({ message: "Book has loan history" });
 
     await db.delete(loans).where(eq(loans.id, loan.id));
     await db.delete(books).where(eq(books.id, bookId));

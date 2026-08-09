@@ -137,13 +137,12 @@ export function createBooksRoutes(db: Db): FastifyPluginAsync {
 
     app.delete("/books/:id", async (request, reply) => {
       const { id } = bookParamsSchema.parse(request.params);
-      const openLoan = await db.query.loans.findFirst({
-        where: (loan, { and, eq }) =>
-          and(eq(loan.bookId, id), eq(loan.status, "borrowed")),
+      const loanHistory = await db.query.loans.findFirst({
+        where: (loan, { eq }) => eq(loan.bookId, id),
       });
 
-      if (openLoan) {
-        throw new AppError(409, "Book has open loans");
+      if (loanHistory) {
+        throw new AppError(409, "Book has loan history");
       }
 
       const [deleted] = await db

@@ -16,7 +16,10 @@ export async function buildApp() {
   const db = createDb(env.DATABASE_URL);
 
   await app.register(cors, { origin: env.CORS_ORIGIN });
-  await app.register(jwt, { secret: env.JWT_SECRET });
+  await app.register(jwt, {
+    secret: env.JWT_SECRET,
+    sign: { expiresIn: "8h" },
+  });
   await authPlugin(app, {});
 
   app.setErrorHandler((error, _request, reply) => {

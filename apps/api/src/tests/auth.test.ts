@@ -21,6 +21,10 @@ describe("POST /auth/login", () => {
     expect(res.statusCode).toBe(200);
     const body = res.json();
     expect(body.token).toBeTypeOf("string");
+    const payload = JSON.parse(
+      Buffer.from(body.token.split(".")[1], "base64url").toString("utf8"),
+    );
+    expect(payload.exp - payload.iat).toBe(8 * 60 * 60);
   });
 
   it("returns 401 for bad password", async () => {

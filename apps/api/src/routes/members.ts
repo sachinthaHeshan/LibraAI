@@ -2,6 +2,7 @@ import { members, type Db } from "@libra/db";
 import { eq } from "drizzle-orm";
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
+import { calendarDateSchema } from "../lib/calendar-date.js";
 import { AppError } from "../lib/errors.js";
 
 const memberParamsSchema = z.object({
@@ -12,7 +13,7 @@ const createMemberSchema = z.object({
   name: z.string().min(1),
   email: z.string().email(),
   phone: z.string().optional(),
-  membershipDate: z.string(),
+  membershipDate: calendarDateSchema,
   status: z.enum(["active", "inactive"]).optional(),
 });
 
@@ -91,13 +92,12 @@ export function createMembersRoutes(db: Db): FastifyPluginAsync {
 
     app.delete("/members/:id", async (request, reply) => {
       const { id } = memberParamsSchema.parse(request.params);
-      const openLoan = await db.query.loans.findFirst({
-        where: (loan, { and, eq }) =>
-          and(eq(loan.memberId, id), eq(loan.status, "borrowed")),
+      const loanHistory = await db.query.loans.findFirst({
+        where: (loan, { eq }) => eq(loan.memberId, id),
       });
 
-      if (openLoan) {
-        throw new AppError(409, "Member has open loans");
+      if (loanHistory) {
+        throw new AppError(409, "Member has loan history");
       }
 
       const [deleted] = await db
