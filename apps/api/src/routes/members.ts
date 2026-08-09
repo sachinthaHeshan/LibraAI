@@ -1,4 +1,4 @@
-import { members, type Db } from "@libra/db";
+import { loans, members, type Db } from "@libra/db";
 import { eq } from "drizzle-orm";
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
@@ -41,7 +41,7 @@ export function createMembersRoutes(db: Db): FastifyPluginAsync {
     app.get("/members/:id", async (request) => {
       const { id } = memberParamsSchema.parse(request.params);
       const member = await db.query.members.findFirst({
-        where: (member, { eq }) => eq(member.id, id),
+        where: eq(members.id, id),
       });
 
       if (!member) {
@@ -93,7 +93,7 @@ export function createMembersRoutes(db: Db): FastifyPluginAsync {
     app.delete("/members/:id", async (request, reply) => {
       const { id } = memberParamsSchema.parse(request.params);
       const loanHistory = await db.query.loans.findFirst({
-        where: (loan, { eq }) => eq(loan.memberId, id),
+        where: eq(loans.memberId, id),
       });
 
       if (loanHistory) {

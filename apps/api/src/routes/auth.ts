@@ -1,5 +1,6 @@
-import type { Db } from "@libra/db";
+import { admins, type Db } from "@libra/db";
 import bcrypt from "bcryptjs";
+import { eq } from "drizzle-orm";
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { AppError } from "../lib/errors.js";
@@ -14,7 +15,7 @@ export function createAuthRoutes(db: Db): FastifyPluginAsync {
     app.post("/auth/login", async (request) => {
       const { email, password } = loginBodySchema.parse(request.body);
       const admin = await db.query.admins.findFirst({
-        where: (admins, { eq }) => eq(admins.email, email),
+        where: eq(admins.email, email),
       });
 
       if (!admin || !(await bcrypt.compare(password, admin.passwordHash))) {

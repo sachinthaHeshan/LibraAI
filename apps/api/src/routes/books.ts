@@ -1,5 +1,5 @@
-import { books, type Db } from "@libra/db";
-import { eq } from "drizzle-orm";
+import { books, loans, type Db } from "@libra/db";
+import { eq, ilike, or } from "drizzle-orm";
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { AppError } from "../lib/errors.js";
@@ -42,12 +42,11 @@ export function createBooksRoutes(db: Db): FastifyPluginAsync {
 
       return db.query.books.findMany({
         where: q
-          ? (book, { ilike, or }) =>
-              or(
-                ilike(book.title, `%${q}%`),
-                ilike(book.author, `%${q}%`),
-                ilike(book.isbn, `%${q}%`),
-              )
+          ? or(
+              ilike(books.title, `%${q}%`),
+              ilike(books.author, `%${q}%`),
+              ilike(books.isbn, `%${q}%`),
+            )
           : undefined,
       });
     });
@@ -55,7 +54,7 @@ export function createBooksRoutes(db: Db): FastifyPluginAsync {
     app.get("/books/:id", async (request) => {
       const { id } = bookParamsSchema.parse(request.params);
       const book = await db.query.books.findFirst({
-        where: (book, { eq }) => eq(book.id, id),
+        where: eq(books.id, id),
       });
 
       if (!book) {
@@ -138,7 +137,7 @@ export function createBooksRoutes(db: Db): FastifyPluginAsync {
     app.delete("/books/:id", async (request, reply) => {
       const { id } = bookParamsSchema.parse(request.params);
       const loanHistory = await db.query.loans.findFirst({
-        where: (loan, { eq }) => eq(loan.bookId, id),
+        where: eq(loans.bookId, id),
       });
 
       if (loanHistory) {

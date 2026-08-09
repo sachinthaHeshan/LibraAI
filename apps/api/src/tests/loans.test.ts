@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { books, createDb, loans, members } from "@libra/db";
-import { inArray } from "drizzle-orm";
+import { inArray, eq } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { buildApp } from "../app.js";
 import { env } from "../env.js";
@@ -100,7 +100,7 @@ describe("loans API", () => {
       status: "borrowed",
     });
     const storedBook = await db.query.books.findFirst({
-      where: (row, { eq }) => eq(row.id, book.id),
+      where: eq(books.id, book.id),
     });
     expect(storedBook?.availableCopies).toBe(0);
   });
@@ -194,7 +194,7 @@ describe("loans API", () => {
     expect(response.json()).toMatchObject({ status: "returned" });
     expect(response.json().returnedAt).toEqual(expect.any(String));
     const storedBook = await db.query.books.findFirst({
-      where: (row, { eq }) => eq(row.id, book.id),
+      where: eq(books.id, book.id),
     });
     expect(storedBook?.availableCopies).toBe(1);
   });
