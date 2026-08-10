@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { AppShell } from "@/components/AppShell";
+import { OverviewAskBar } from "@/components/OverviewAskBar";
 import { apiFetch } from "@/lib/api";
 import { lendingActivitySeries } from "@/lib/lending-activity";
 
@@ -231,15 +232,16 @@ export default function OverviewPage() {
       subtitle="Last 12 months"
       title="Overview"
     >
-      {loading ? (
-        <div className="grid gap-4 md:grid-cols-3">
-          <div className="card skeleton h-52" />
-          <div className="card skeleton h-52" />
-          <div className="card skeleton h-52" />
-        </div>
-      ) : (
-        <>
-          <div className="mb-5 grid gap-4 md:grid-cols-3">
+      <div className="pb-28 lg:pb-24">
+        {loading ? (
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="card skeleton h-52" />
+            <div className="card skeleton h-52" />
+            <div className="card skeleton h-52" />
+          </div>
+        ) : (
+          <>
+            <div className="mb-5 grid gap-4 md:grid-cols-3">
             <Ring
               compare={`${availableCopies} of ${totalCopies || 0} copies free`}
               label="Availability"
@@ -335,8 +337,10 @@ export default function OverviewPage() {
               </table>
             </div>
           </section>
-        </>
-      )}
+          </>
+        )}
+      </div>
+      <OverviewAskBar />
     </AppShell>
   );
 }
