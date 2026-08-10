@@ -1,8 +1,9 @@
 import { books, loans, type Db } from "@libra/db";
-import { eq, ilike, or } from "drizzle-orm";
+import { and, eq, ilike, or } from "drizzle-orm";
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { AppError } from "../lib/errors.js";
+import { requireOrgId } from "../lib/org.js";
 
 const bookParamsSchema = z.object({
   id: z.string().uuid(),
@@ -38,23 +39,28 @@ export function createBooksRoutes(db: Db): FastifyPluginAsync {
     app.addHook("preHandler", app.authenticate);
 
     app.get("/books", async (request) => {
+      const orgId = requireOrgId(request);
       const { q } = listBooksQuerySchema.parse(request.query);
 
       return db.query.books.findMany({
-        where: q
-          ? or(
-              ilike(books.title, `%${q}%`),
-              ilike(books.author, `%${q}%`),
-              ilike(books.isbn, `%${q}%`),
-            )
-          : undefined,
+        where: and(
+          eq(books.organizationId, orgId),
+          q
+            ? or(
+                ilike(books.title, `%${q}%`),
+                ilike(books.author, `%${q}%`),
+                ilike(books.isbn, `%${q}%`),
+              )
+            : undefined,
+        ),
       });
     });
 
     app.get("/books/:id", async (request) => {
+      const orgId = requireOrgId(request);
       const { id } = bookParamsSchema.parse(request.params);
       const book = await db.query.books.findFirst({
-        where: eq(books.id, id),
+        where: and(eq(books.id, id), eq(books.organizationId, orgId)),
       });
 
       if (!book) {
@@ -65,12 +71,17 @@ export function createBooksRoutes(db: Db): FastifyPluginAsync {
     });
 
     app.post("/books", async (request, reply) => {
+      const orgId = requireOrgId(request);
       const input = createBookSchema.parse(request.body);
 
       try {
         const [book] = await db
           .insert(books)
-          .values({ ...input, availableCopies: input.totalCopies })
+          .values({
+            ...input,
+            organizationId: orgId,
+            availableCopies: input.totalCopies,
+          })
           .returning();
 
         return reply.status(201).send(book);
@@ -83,6 +94,7 @@ export function createBooksRoutes(db: Db): FastifyPluginAsync {
     });
 
     app.patch("/books/:id", async (request) => {
+      const orgId = requireOrgId(request);
       const { id } = bookParamsSchema.parse(request.params);
       const input = updateBookSchema.parse(request.body);
 
@@ -91,7 +103,7 @@ export function createBooksRoutes(db: Db): FastifyPluginAsync {
           const [current] = await tx
             .select()
             .from(books)
-            .where(eq(books.id, id))
+            .where(and(eq(books.id, id), eq(books.organizationId, orgId)))
             .limit(1)
             .for("update");
 
@@ -121,7 +133,7 @@ export function createBooksRoutes(db: Db): FastifyPluginAsync {
           const [book] = await tx
             .update(books)
             .set(update)
-            .where(eq(books.id, id))
+            .where(and(eq(books.id, id), eq(books.organizationId, orgId)))
             .returning();
 
           return book;
@@ -135,7 +147,15 @@ export function createBooksRoutes(db: Db): FastifyPluginAsync {
     });
 
     app.delete("/books/:id", async (request, reply) => {
+      const orgId = requireOrgId(request);
       const { id } = bookParamsSchema.parse(request.params);
+      const book = await db.query.books.findFirst({
+        where: and(eq(books.id, id), eq(books.organizationId, orgId)),
+      });
+      if (!book) {
+        throw new AppError(404, "Book not found");
+      }
+
       const loanHistory = await db.query.loans.findFirst({
         where: eq(loans.bookId, id),
       });
@@ -146,7 +166,7 @@ export function createBooksRoutes(db: Db): FastifyPluginAsync {
 
       const [deleted] = await db
         .delete(books)
-        .where(eq(books.id, id))
+        .where(and(eq(books.id, id), eq(books.organizationId, orgId)))
         .returning({ id: books.id });
 
       if (!deleted) {

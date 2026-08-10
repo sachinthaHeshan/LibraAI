@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { books, createDb, loans, members } from "@libra/db";
+import { admins, books, createDb, loans, members } from "@libra/db";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { buildApp } from "../create-app.js";
@@ -9,6 +9,7 @@ import { TEST_ADMIN } from "./test-admin.js";
 describe("books API", () => {
   let app: Awaited<ReturnType<typeof buildApp>>;
   let token: string;
+  let orgId: string;
 
   beforeAll(async () => {
     app = await buildApp();
@@ -23,6 +24,15 @@ describe("books API", () => {
       },
     });
     token = login.json().token;
+
+    const db = createDb(env.DATABASE_URL);
+    const admin = await db.query.admins.findFirst({
+      where: eq(admins.email, TEST_ADMIN.email),
+    });
+    if (!admin?.organizationId) {
+      throw new Error("Test admin organization not found");
+    }
+    orgId = admin.organizationId;
   });
 
   afterAll(async () => {
@@ -167,6 +177,7 @@ describe("books API", () => {
         name: "Books API Test",
         email: `${randomUUID()}@example.com`,
         membershipDate: "2026-08-09",
+        organizationId: orgId,
       })
       .returning();
     const [loan] = await db
@@ -208,6 +219,7 @@ describe("books API", () => {
         name: "Returned Book Test",
         email: `${randomUUID()}@example.com`,
         membershipDate: "2026-08-09",
+        organizationId: orgId,
       })
       .returning();
     const [loan] = await db

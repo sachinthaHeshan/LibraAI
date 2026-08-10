@@ -1,9 +1,10 @@
 import { loans, members, type Db } from "@libra/db";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { calendarDateSchema } from "../lib/calendar-date.js";
 import { AppError } from "../lib/errors.js";
+import { requireOrgId } from "../lib/org.js";
 
 const memberParamsSchema = z.object({
   id: z.string().uuid(),
@@ -34,14 +35,18 @@ export function createMembersRoutes(db: Db): FastifyPluginAsync {
   return async (app) => {
     app.addHook("preHandler", app.authenticate);
 
-    app.get("/members", async () => {
-      return db.query.members.findMany();
+    app.get("/members", async (request) => {
+      const orgId = requireOrgId(request);
+      return db.query.members.findMany({
+        where: eq(members.organizationId, orgId),
+      });
     });
 
     app.get("/members/:id", async (request) => {
+      const orgId = requireOrgId(request);
       const { id } = memberParamsSchema.parse(request.params);
       const member = await db.query.members.findFirst({
-        where: eq(members.id, id),
+        where: and(eq(members.id, id), eq(members.organizationId, orgId)),
       });
 
       if (!member) {
@@ -52,10 +57,14 @@ export function createMembersRoutes(db: Db): FastifyPluginAsync {
     });
 
     app.post("/members", async (request, reply) => {
+      const orgId = requireOrgId(request);
       const input = createMemberSchema.parse(request.body);
 
       try {
-        const [member] = await db.insert(members).values(input).returning();
+        const [member] = await db
+          .insert(members)
+          .values({ ...input, organizationId: orgId })
+          .returning();
 
         return reply.status(201).send(member);
       } catch (error) {
@@ -67,6 +76,7 @@ export function createMembersRoutes(db: Db): FastifyPluginAsync {
     });
 
     app.patch("/members/:id", async (request) => {
+      const orgId = requireOrgId(request);
       const { id } = memberParamsSchema.parse(request.params);
       const input = updateMemberSchema.parse(request.body);
 
@@ -74,7 +84,7 @@ export function createMembersRoutes(db: Db): FastifyPluginAsync {
         const [member] = await db
           .update(members)
           .set({ ...input, updatedAt: new Date() })
-          .where(eq(members.id, id))
+          .where(and(eq(members.id, id), eq(members.organizationId, orgId)))
           .returning();
 
         if (!member) {
@@ -91,7 +101,15 @@ export function createMembersRoutes(db: Db): FastifyPluginAsync {
     });
 
     app.delete("/members/:id", async (request, reply) => {
+      const orgId = requireOrgId(request);
       const { id } = memberParamsSchema.parse(request.params);
+      const member = await db.query.members.findFirst({
+        where: and(eq(members.id, id), eq(members.organizationId, orgId)),
+      });
+      if (!member) {
+        throw new AppError(404, "Member not found");
+      }
+
       const loanHistory = await db.query.loans.findFirst({
         where: eq(loans.memberId, id),
       });
@@ -102,7 +120,7 @@ export function createMembersRoutes(db: Db): FastifyPluginAsync {
 
       const [deleted] = await db
         .delete(members)
-        .where(eq(members.id, id))
+        .where(and(eq(members.id, id), eq(members.organizationId, orgId)))
         .returning({ id: members.id });
 
       if (!deleted) {

@@ -4,6 +4,7 @@ import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { calendarDateSchema } from "../lib/calendar-date.js";
 import { AppError } from "../lib/errors.js";
+import { requireOrgId } from "../lib/org.js";
 
 const loanParamsSchema = z.object({
   id: z.string().uuid(),
@@ -24,13 +25,19 @@ export function createLoansRoutes(db: Db): FastifyPluginAsync {
     app.addHook("preHandler", app.authenticate);
 
     app.post("/loans", async (request, reply) => {
+      const orgId = requireOrgId(request);
       const input = createLoanSchema.parse(request.body);
 
       const loan = await db.transaction(async (tx) => {
         const [member] = await tx
           .select()
           .from(members)
-          .where(eq(members.id, input.memberId))
+          .where(
+            and(
+              eq(members.id, input.memberId),
+              eq(members.organizationId, orgId),
+            ),
+          )
           .limit(1)
           .for("update");
         if (!member) {
@@ -43,7 +50,12 @@ export function createLoansRoutes(db: Db): FastifyPluginAsync {
         const [book] = await tx
           .select()
           .from(books)
-          .where(eq(books.id, input.bookId))
+          .where(
+            and(
+              eq(books.id, input.bookId),
+              eq(books.organizationId, orgId),
+            ),
+          )
           .limit(1)
           .for("update");
         if (!book) {
@@ -69,6 +81,7 @@ export function createLoansRoutes(db: Db): FastifyPluginAsync {
     });
 
     app.post("/loans/:id/return", async (request) => {
+      const orgId = requireOrgId(request);
       const { id } = loanParamsSchema.parse(request.params);
 
       return db.transaction(async (tx) => {
@@ -88,11 +101,16 @@ export function createLoansRoutes(db: Db): FastifyPluginAsync {
         const [book] = await tx
           .select()
           .from(books)
-          .where(eq(books.id, loan.bookId))
+          .where(
+            and(
+              eq(books.id, loan.bookId),
+              eq(books.organizationId, orgId),
+            ),
+          )
           .limit(1)
           .for("update");
         if (!book) {
-          throw new AppError(404, "Book not found");
+          throw new AppError(404, "Loan not found");
         }
 
         const returnedAt = new Date();
@@ -118,6 +136,7 @@ export function createLoansRoutes(db: Db): FastifyPluginAsync {
     });
 
     app.get("/loans", async (request) => {
+      const orgId = requireOrgId(request);
       const { status } = listLoansQuerySchema.parse(request.query);
       const rows = await db
         .select({
@@ -140,7 +159,13 @@ export function createLoansRoutes(db: Db): FastifyPluginAsync {
         .from(loans)
         .innerJoin(books, eq(loans.bookId, books.id))
         .innerJoin(members, eq(loans.memberId, members.id))
-        .where(status ? eq(loans.status, status) : undefined);
+        .where(
+          and(
+            eq(books.organizationId, orgId),
+            eq(members.organizationId, orgId),
+            status ? eq(loans.status, status) : undefined,
+          ),
+        );
       const today = new Date().toISOString().slice(0, 10);
 
       return rows.map((loan) => ({
