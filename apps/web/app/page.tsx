@@ -1,6 +1,7 @@
 "use client";
 
 import { LandingAi } from "@/components/landing/LandingAi";
+import { LandingAurora } from "@/components/landing/LandingAurora";
 import { LandingFooterCta } from "@/components/landing/LandingFooterCta";
 import { LandingHero } from "@/components/landing/LandingHero";
 import { LandingNav } from "@/components/landing/LandingNav";
@@ -11,6 +12,7 @@ export default function Home() {
   return (
     <main className="min-h-screen overflow-x-hidden bg-canvas">
       <div className="landing-hero">
+        <LandingAurora />
         <LandingNav />
         <LandingHero />
       </div>
