@@ -1,4 +1,4 @@
-import { admins, createDb } from "@libra/db";
+import { admins, createDb, organizations } from "@libra/db";
 import bcrypt from "bcryptjs";
 import { stdin, stdout } from "node:process";
 import * as readline from "node:readline/promises";
@@ -11,6 +11,8 @@ const seedInputSchema = z.object({
   email: z.string().email("Invalid email"),
   password: z.string().min(1, "Password is required"),
 });
+
+const planSchema = z.enum(["starter", "pro", "enterprise"]);
 
 async function ask(rl: readline.Interface, question: string): Promise<string> {
   const answer = await rl.question(question);
@@ -57,11 +59,73 @@ async function askPassword(prompt: string): Promise<string> {
   });
 }
 
+async function promptOrganization(db: ReturnType<typeof createDb>) {
+  const orgs = await db.select().from(organizations).orderBy(organizations.name);
+
+  const rl = readline.createInterface({ input: stdin, output: stdout });
+
+  try {
+    console.log("Select organization\n");
+    console.log("0) Create new organization");
+    orgs.forEach((org, index) => {
+      console.log(`${index + 1}) ${org.name} (${org.plan})`);
+    });
+
+    while (true) {
+      const choice = await ask(rl, "\nChoice: ");
+      const num = Number.parseInt(choice, 10);
+
+      if (choice === "0" || num === 0) {
+        const name = await ask(rl, "Organization name: ");
+        if (!name) {
+          console.error("\nName is required. Try again.\n");
+          continue;
+        }
+
+        let plan: z.infer<typeof planSchema>;
+        while (true) {
+          const planInput = await ask(rl, "Plan (starter/pro/enterprise) [pro]: ");
+          const parsed = planSchema.safeParse(planInput || "pro");
+          if (parsed.success) {
+            plan = parsed.data;
+            break;
+          }
+          console.error("\nInvalid plan. Choose starter, pro, or enterprise.\n");
+        }
+
+        const addressInput = await ask(rl, "Address (optional): ");
+        const phoneInput = await ask(rl, "Phone (optional): ");
+
+        const [org] = await db
+          .insert(organizations)
+          .values({
+            name,
+            plan,
+            address: addressInput || null,
+            phone: phoneInput || null,
+          })
+          .returning();
+
+        return { organizationId: org.id, orgName: org.name };
+      }
+
+      if (!Number.isNaN(num) && num >= 1 && num <= orgs.length) {
+        const org = orgs[num - 1]!;
+        return { organizationId: org.id, orgName: org.name };
+      }
+
+      console.error(`\nInvalid choice. Enter 0–${orgs.length}.\n`);
+    }
+  } finally {
+    rl.close();
+  }
+}
+
 async function promptSeedInput() {
   const rl = readline.createInterface({ input: stdin, output: stdout });
 
   try {
-    console.log("Create admin user\n");
+    console.log("\nCreate admin user\n");
 
     while (true) {
       const firstName = await ask(rl, "First name: ");
@@ -86,8 +150,9 @@ if (!stdin.isTTY) {
   process.exit(1);
 }
 
-const { firstName, lastName, email, password } = await promptSeedInput();
 const db = createDb(env.DATABASE_URL);
+const { organizationId, orgName } = await promptOrganization(db);
+const { firstName, lastName, email, password } = await promptSeedInput();
 const passwordHash = await bcrypt.hash(password, 12);
 
 await db
@@ -97,11 +162,12 @@ await db
     lastName,
     email,
     passwordHash,
+    organizationId,
   })
   .onConflictDoUpdate({
     target: admins.email,
-    set: { firstName, lastName, passwordHash },
+    set: { firstName, lastName, passwordHash, organizationId },
   });
 
-console.log(`Seeded admin ${firstName} ${lastName} <${email}>`);
+console.log(`Seeded admin ${firstName} ${lastName} <${email}> in org ${orgName}`);
 process.exit(0);
