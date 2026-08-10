@@ -86,16 +86,29 @@ export function createLoansRoutes(db: Db): FastifyPluginAsync {
 
       return db.transaction(async (tx) => {
         const [loan] = await tx
-          .select()
+          .select({
+            id: loans.id,
+            bookId: loans.bookId,
+            memberId: loans.memberId,
+            issuedAt: loans.issuedAt,
+            dueDate: loans.dueDate,
+            returnedAt: loans.returnedAt,
+            status: loans.status,
+          })
           .from(loans)
-          .where(eq(loans.id, id))
+          .innerJoin(books, eq(loans.bookId, books.id))
+          .innerJoin(members, eq(loans.memberId, members.id))
+          .where(
+            and(
+              eq(loans.id, id),
+              eq(books.organizationId, orgId),
+              eq(members.organizationId, orgId),
+            ),
+          )
           .limit(1)
           .for("update");
         if (!loan) {
           throw new AppError(404, "Loan not found");
-        }
-        if (loan.status === "returned") {
-          throw new AppError(400, "Loan already returned");
         }
 
         const [book] = await tx
@@ -111,6 +124,9 @@ export function createLoansRoutes(db: Db): FastifyPluginAsync {
           .for("update");
         if (!book) {
           throw new AppError(404, "Loan not found");
+        }
+        if (loan.status === "returned") {
+          throw new AppError(400, "Loan already returned");
         }
 
         const returnedAt = new Date();

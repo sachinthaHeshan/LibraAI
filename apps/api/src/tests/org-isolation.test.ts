@@ -70,4 +70,81 @@ describe("org isolation", () => {
     const booksB = listB.json() as Array<{ title: string }>;
     expect(booksB.some((b) => b.title === "Org A Book")).toBe(false);
   });
+
+  it("does not leak members across orgs", async () => {
+    const email = `member-a-${Date.now()}@libra.local`;
+    const created = await app.inject({
+      method: "POST",
+      url: "/members",
+      headers: { authorization: `Bearer ${tokenA}` },
+      payload: {
+        name: "Org A Member",
+        email,
+        membershipDate: "2026-08-10",
+      },
+    });
+    expect(created.statusCode).toBe(201);
+
+    const listB = await app.inject({
+      method: "GET",
+      url: "/members",
+      headers: { authorization: `Bearer ${tokenB}` },
+    });
+    expect(listB.statusCode).toBe(200);
+    const membersB = listB.json() as Array<{ email: string }>;
+    expect(membersB.some((member) => member.email === email)).toBe(false);
+  });
+
+  it("returns 404 when returning another org's returned loan", async () => {
+    const book = await app.inject({
+      method: "POST",
+      url: "/books",
+      headers: { authorization: `Bearer ${tokenB}` },
+      payload: {
+        title: "Org B Loan Book",
+        author: "Author",
+        isbn: `ISBN-B-${Date.now()}`,
+        totalCopies: 1,
+      },
+    });
+    expect(book.statusCode).toBe(201);
+
+    const member = await app.inject({
+      method: "POST",
+      url: "/members",
+      headers: { authorization: `Bearer ${tokenB}` },
+      payload: {
+        name: "Org B Loan Member",
+        email: `loan-member-b-${Date.now()}@libra.local`,
+        membershipDate: "2026-08-10",
+      },
+    });
+    expect(member.statusCode).toBe(201);
+
+    const loan = await app.inject({
+      method: "POST",
+      url: "/loans",
+      headers: { authorization: `Bearer ${tokenB}` },
+      payload: {
+        bookId: book.json().id,
+        memberId: member.json().id,
+        dueDate: "2026-08-24",
+      },
+    });
+    expect(loan.statusCode).toBe(201);
+
+    const returnedByOwner = await app.inject({
+      method: "POST",
+      url: `/loans/${loan.json().id}/return`,
+      headers: { authorization: `Bearer ${tokenB}` },
+    });
+    expect(returnedByOwner.statusCode).toBe(200);
+
+    const returnedByOtherOrg = await app.inject({
+      method: "POST",
+      url: `/loans/${loan.json().id}/return`,
+      headers: { authorization: `Bearer ${tokenA}` },
+    });
+    expect(returnedByOtherOrg.statusCode).toBe(404);
+  });
 });
