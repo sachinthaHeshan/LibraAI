@@ -23,8 +23,8 @@ function SparklesIcon() {
     <svg aria-hidden className="h-5 w-5 shrink-0" viewBox="0 0 24 24">
       <defs>
         <linearGradient id="askSparkle" x1="0" x2="1" y1="0" y2="1">
-          <stop offset="0%" stopColor="#ec4899" />
-          <stop offset="100%" stopColor="#6366f1" />
+          <stop offset="0%" stopColor="#2f6bff" />
+          <stop offset="100%" stopColor="#8b5cf6" />
         </linearGradient>
       </defs>
       <path

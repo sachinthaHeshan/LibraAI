@@ -8,6 +8,13 @@
   --line: #eef0f4;
   --accent: #2f6bff;
   --accent-soft: #eaf0ff;
+  --ask-violet: #8b5cf6;
+  --ask-border-gradient: linear-gradient(
+    90deg,
+    var(--accent) 0%,
+    #6366f1 48%,
+    var(--ask-violet) 100%
+  );
   --success: #22c55e;
   --success-soft: #e9f9ef;
   --warn: #f59e0b;
@@ -446,9 +453,9 @@ main > section:last-of-type .btn-primary:hover:not(:disabled) {
   position: relative;
   background:
     linear-gradient(#fff, #fff) padding-box,
-    linear-gradient(90deg, #f59e0b 0%, #ec4899 50%, #6366f1 100%) border-box;
+    var(--ask-border-gradient) border-box;
   border: 1.5px solid transparent;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 10px 30px rgba(47, 107, 255, 0.1);
 }
 
 .ask-shell-pill {
