@@ -1,6 +1,17 @@
 # LibraAI — Library Management
 
-pnpm monorepo for admin-only library management: books, members, and loans.
+pnpm monorepo for multi-tenant library management: organizations, books,
+members, loans, and staff admins.
+
+## Product notes
+
+- Public marketing landing lives at `/`; self-serve signup is at `/signup`
+- Each library is an **organization** — books, members, loans, and admins are
+  scoped to that org (composite uniqueness for ISBN/email per org)
+- Chosen plans (Starter / Pro / Enterprise) are **recorded without payment** —
+  no billing or plan enforcement yet
+- `just seed` / `pnpm db:seed` prompts you to select or create an organization,
+  then create or update an admin in that org
 
 ## Prerequisites
 
@@ -11,18 +22,20 @@ pnpm monorepo for admin-only library management: books, members, and loans.
 
 ## Quick start
 
-One command starts Postgres, runs migrations, prompts for an admin user, and
-launches API + web:
+One command starts Postgres, runs migrations, prompts for an organization and
+admin user, and launches API + web:
 
 ```bash
 just
 ```
 
-On first run you'll be asked for the administrator's first name, last name,
-email, and password. Use those credentials to sign in at
-[http://localhost:3000](http://localhost:3000).
+On first run you'll be asked to select or create an organization, then the
+administrator's first name, last name, email, and password. Open
+[http://localhost:3000](http://localhost:3000) for the public landing, or
+[http://localhost:3000/signup](http://localhost:3000/signup) to create a new
+library. Sign in to reach the admin dashboard.
 
-To create or update an admin later:
+To create or update an admin later (prompts for organization):
 
 ```bash
 just seed
@@ -44,7 +57,7 @@ Run migrations manually against that database (from a machine with repo access):
 export DATABASE_URL='postgresql://...'
 pnpm install
 pnpm db:migrate
-pnpm db:seed   # optional: create admin user
+pnpm db:seed   # optional: select/create org + admin
 ```
 
 ### 2. API application
@@ -105,10 +118,10 @@ docker run --rm -e API_URL=http://host.docker.internal:3001 -p 3450:3450 libra-w
 | `just test` | Run API tests |
 | `pnpm db:generate` | Generate Drizzle migrations from schema |
 | `pnpm db:migrate` | Apply migrations to Postgres |
-| `pnpm db:seed` | Prompt to create or update an admin user |
+| `pnpm db:seed` | Prompt to select/create an org and admin |
 
 ## Packages
 
-- `@libra/web` — Next.js admin interface
+- `@libra/web` — Next.js landing, signup, and admin UI
 - `@libra/api` — Fastify REST API
 - `@libra/db` — Drizzle schema, migrations, and database client
