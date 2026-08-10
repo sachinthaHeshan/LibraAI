@@ -53,7 +53,7 @@ pnpm db:seed   # optional: create admin user
 |---------|-------|
 | Build context | Repository root (`.`) |
 | Dockerfile | `Dockerfile.api` |
-| Port | `3001` |
+| Port | `3451` |
 
 Environment variables:
 
@@ -62,7 +62,7 @@ Environment variables:
 | `DATABASE_URL` | yes | Dokploy Postgres URL |
 | `JWT_SECRET` | yes | long random string |
 | `CORS_ORIGIN` | yes | `https://your-web-domain` |
-| `PORT` | no | `3001` |
+| `PORT` | no | `3451` |
 | `NODE_ENV` | no | `production` |
 
 ### 3. Web application
@@ -71,7 +71,7 @@ Environment variables:
 |---------|-------|
 | Build context | Repository root (`.`) |
 | Dockerfile | `Dockerfile.web` |
-| Port | `3000` |
+| Port | `3450` |
 
 Build-time argument / env (must be available during `docker build`):
 
@@ -85,7 +85,7 @@ After changing the API public URL, **rebuild** the web image so the client bundl
 
 ```bash
 docker build -f Dockerfile.api -t libra-api:local .
-docker build -f Dockerfile.web --build-arg NEXT_PUBLIC_API_URL=http://localhost:3001 -t libra-web:local .
+docker build -f Dockerfile.web --build-arg NEXT_PUBLIC_API_URL=http://localhost:3451 -t libra-web:local .
 ```
 
 ## Available commands

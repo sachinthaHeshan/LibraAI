@@ -30,8 +30,8 @@ COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/apps/api ./apps/api
 COPY --from=build /app/packages/db ./packages/db
 
-EXPOSE 3001
-ENV PORT=3001
+EXPOSE 3451
+ENV PORT=3451
 
 WORKDIR /app/apps/api
 CMD ["pnpm", "start"]
