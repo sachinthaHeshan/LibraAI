@@ -3,6 +3,7 @@ import { and, eq, ilike, or } from "drizzle-orm";
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { AppError } from "../lib/errors.js";
+import { isUniqueViolation } from "../lib/pg.js";
 import { requireOrgId } from "../lib/org.js";
 
 const bookParamsSchema = z.object({
@@ -24,15 +25,6 @@ const createBookSchema = z.object({
 const updateBookSchema = createBookSchema
   .partial()
   .refine((update) => Object.keys(update).length > 0);
-
-function isUniqueViolation(error: unknown) {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    error.code === "23505"
-  );
-}
 
 export function createBooksRoutes(db: Db): FastifyPluginAsync {
   return async (app) => {
