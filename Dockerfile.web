@@ -13,7 +13,8 @@ COPY packages/db/package.json ./packages/db/
 RUN pnpm install --frozen-lockfile --filter @libra/web... --ignore-scripts
 
 FROM base AS build
-ARG NEXT_PUBLIC_API_URL
+# Optional build-arg; Dokploy runtime NEXT_PUBLIC_API_URL / API_URL is injected per request
+ARG NEXT_PUBLIC_API_URL=
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules

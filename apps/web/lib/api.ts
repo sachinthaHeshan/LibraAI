@@ -1,3 +1,4 @@
+import { getApiBaseUrl } from "./api-base-url";
 import { clearToken, getToken } from "./auth";
 
 async function parseResponse<T>(response: Response): Promise<T> {
@@ -22,10 +23,10 @@ export async function publicApiFetch<T>(
     headers.set("Content-Type", "application/json");
   }
 
-  const response = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}${path}`,
-    { ...init, headers },
-  );
+  const response = await fetch(`${getApiBaseUrl()}${path}`, {
+    ...init,
+    headers,
+  });
 
   return parseResponse<T>(response);
 }
@@ -44,10 +45,10 @@ export async function apiFetch<T>(
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  const response = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}${path}`,
-    { ...init, headers },
-  );
+  const response = await fetch(`${getApiBaseUrl()}${path}`, {
+    ...init,
+    headers,
+  });
 
   if (response.status === 401) {
     clearToken();
