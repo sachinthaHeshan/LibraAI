@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { buildApp } from "../create-app.js";
+import { TEST_ADMIN } from "./test-admin.js";
 
 describe("POST /auth/login", () => {
   let app: Awaited<ReturnType<typeof buildApp>>;
@@ -14,8 +15,8 @@ describe("POST /auth/login", () => {
       method: "POST",
       url: "/auth/login",
       payload: {
-        email: process.env.ADMIN_EMAIL ?? "admin@libra.local",
-        password: process.env.ADMIN_PASSWORD ?? "admin123",
+        email: TEST_ADMIN.email,
+        password: TEST_ADMIN.password,
       },
     });
     expect(res.statusCode).toBe(200);
@@ -31,7 +32,7 @@ describe("POST /auth/login", () => {
     const res = await app.inject({
       method: "POST",
       url: "/auth/login",
-      payload: { email: "admin@libra.local", password: "wrong" },
+      payload: { email: TEST_ADMIN.email, password: "wrong" },
     });
     expect(res.statusCode).toBe(401);
   });

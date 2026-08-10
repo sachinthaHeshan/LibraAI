@@ -44,9 +44,9 @@ docker:
 migrate:
 	pnpm db:migrate
 
-# Seed admin user
+# Seed admin user (prompts for input when run interactively)
 seed:
-	pnpm db:seed
+	pnpm --filter @libra/api seed
 
 # Fastify API on :3001
 api:

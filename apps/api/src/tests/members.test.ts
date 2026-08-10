@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { buildApp } from "../create-app.js";
 import { env } from "../env.js";
+import { TEST_ADMIN } from "./test-admin.js";
 
 describe("members API", () => {
   let app: Awaited<ReturnType<typeof buildApp>>;
@@ -17,8 +18,8 @@ describe("members API", () => {
       method: "POST",
       url: "/auth/login",
       payload: {
-        email: process.env.ADMIN_EMAIL ?? "admin@libra.local",
-        password: process.env.ADMIN_PASSWORD ?? "admin123",
+        email: TEST_ADMIN.email,
+        password: TEST_ADMIN.password,
       },
     });
     token = login.json().token;

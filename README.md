@@ -11,20 +11,24 @@ pnpm monorepo for admin-only library management: books, members, and loans.
 
 ## Quick start
 
-One command starts Postgres, runs migrations + seed, and launches API + web:
+One command starts Postgres, runs migrations, prompts for an admin user, and
+launches API + web:
 
 ```bash
 just
 ```
 
-Open [http://localhost:3000](http://localhost:3000) and sign in with the
-default seeded administrator:
+On first run you'll be asked for the administrator's first name, last name,
+email, and password. Use those credentials to sign in at
+[http://localhost:3000](http://localhost:3000).
 
-- Email: `admin@libra.local`
-- Password: `admin123`
+To create or update an admin later:
 
-Change `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and `JWT_SECRET` in `.env` for
-non-development use, then run `pnpm db:seed` again if the credentials change.
+```bash
+just seed
+```
+
+Change `JWT_SECRET` in `.env` for non-development use.
 
 ## Available commands
 
@@ -38,7 +42,7 @@ non-development use, then run `pnpm db:seed` again if the credentials change.
 | `just test` | Run API tests |
 | `pnpm db:generate` | Generate Drizzle migrations from schema |
 | `pnpm db:migrate` | Apply migrations to Postgres |
-| `pnpm db:seed` | Seed or update the admin user |
+| `pnpm db:seed` | Prompt to create or update an admin user |
 
 ## Packages
 

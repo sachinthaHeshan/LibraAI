@@ -4,6 +4,7 @@ import { inArray, eq } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { buildApp } from "../create-app.js";
 import { env } from "../env.js";
+import { TEST_ADMIN } from "./test-admin.js";
 
 describe("loans API", () => {
   const db = createDb(env.DATABASE_URL);
@@ -20,8 +21,8 @@ describe("loans API", () => {
       method: "POST",
       url: "/auth/login",
       payload: {
-        email: process.env.ADMIN_EMAIL ?? "admin@libra.local",
-        password: process.env.ADMIN_PASSWORD ?? "admin123",
+        email: TEST_ADMIN.email,
+        password: TEST_ADMIN.password,
       },
     });
     token = login.json().token;
