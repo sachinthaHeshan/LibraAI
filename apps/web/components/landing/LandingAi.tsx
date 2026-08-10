@@ -7,7 +7,7 @@ const PROMPTS = [
 export function LandingAi() {
   return (
     <section className="border-t border-line bg-white" id="ai">
-      <div className="mx-auto max-w-6xl px-5 py-16 sm:px-8 sm:py-20">
+      <div className="mx-auto max-w-6xl px-5 py-16 sm:px-8 sm:py-24">
         <h2 className="text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">
           Do everything with AI
         </h2>
@@ -16,7 +16,7 @@ export function LandingAi() {
           and loan actions.
         </p>
 
-        <ul className="mt-10 flex flex-col gap-3">
+        <ul className="mt-12 flex flex-col gap-3.5">
           {PROMPTS.map((prompt, index) => {
             const delayClass =
               index === 0
@@ -27,7 +27,7 @@ export function LandingAi() {
 
             return (
               <li
-                className={`landing-animate ${delayClass} inline-flex w-fit max-w-full rounded-2xl border border-line bg-canvas px-4 py-3 text-sm font-medium text-ink sm:text-base`}
+                className={`landing-animate ${delayClass} inline-flex w-fit max-w-full rounded-2xl border border-[#d9e4f7] bg-[linear-gradient(135deg,#f5f8ff_0%,#eef3fc_100%)] px-4 py-3.5 text-sm font-medium text-ink shadow-[0_1px_0_rgba(47,107,255,0.06)] sm:text-base`}
                 key={prompt}
               >
                 <span className="mr-2 shrink-0 text-accent">“</span>

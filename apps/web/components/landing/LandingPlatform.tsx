@@ -15,8 +15,11 @@ const FEATURES = [
 
 export function LandingPlatform() {
   return (
-    <section className="border-t border-line bg-canvas" id="features">
-      <div className="mx-auto max-w-6xl px-5 py-16 sm:px-8 sm:py-20">
+    <section
+      className="border-t border-line bg-[radial-gradient(ellipse_70%_50%_at_50%_0%,#eef3fb_0%,var(--canvas)_55%)]"
+      id="features"
+    >
+      <div className="mx-auto max-w-6xl px-5 py-16 sm:px-8 sm:py-24">
         <h2 className="text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">
           Your library platform
         </h2>
@@ -25,12 +28,12 @@ export function LandingPlatform() {
           side.
         </p>
 
-        <div className="mt-12 grid gap-10 sm:grid-cols-3 sm:gap-8">
+        <div className="mt-14 grid gap-12 sm:grid-cols-3 sm:gap-10">
           {FEATURES.map((feature) => (
             <div key={feature.title}>
-              <div className="mb-4 h-1 w-10 rounded-full bg-accent" />
+              <div className="mb-5 h-1 w-12 rounded-full bg-accent" />
               <h3 className="text-xl font-bold tracking-tight text-ink">{feature.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-[#4b5563] sm:text-base">
+              <p className="mt-2.5 text-sm leading-relaxed text-[#4b5563] sm:text-base">
                 {feature.body}
               </p>
             </div>
