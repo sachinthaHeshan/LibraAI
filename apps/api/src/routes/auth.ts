@@ -23,7 +23,11 @@ export function createAuthRoutes(db: Db): FastifyPluginAsync {
       }
 
       return {
-        token: app.jwt.sign({ sub: admin.id, email }),
+        token: app.jwt.sign({
+          sub: admin.id,
+          orgId: admin.organizationId,
+          email,
+        }),
       };
     });
   };
