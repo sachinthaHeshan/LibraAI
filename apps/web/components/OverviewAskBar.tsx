@@ -42,6 +42,7 @@ export function OverviewAskBar(): JSX.Element {
   }, [expanded]);
 
   function submit() {
+    if (sending) return;
     const ok = submitAskDraft(draft, {
       sendMessage,
       navigate: (href) => router.push(href),
