@@ -23,4 +23,11 @@ describe("ChatWidget", () => {
     expect(html).toContain('aria-label="Send message"');
     expect(html).not.toContain(">Send</button>");
   });
+
+  it("shows chat avatar in the open panel", () => {
+    const html = renderToStaticMarkup(<ChatWidget />);
+    expect(html).toContain("chat-avatar.png");
+    expect(html).toContain('alt="LibraAI Assistant"');
+    expect(html).toContain("LibraAI Assistant");
+  });
 });

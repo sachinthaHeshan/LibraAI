@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import {
   type FormEvent,
   type JSX,
@@ -11,6 +12,27 @@ import {
 
 import { useChat } from "@/components/ChatProvider";
 import { WELCOME_COPY } from "@/lib/chat";
+
+const AVATAR_SRC = "/chat-avatar.png";
+
+const avatarSizes = {
+  sm: { px: 28, className: "h-7 w-7" },
+  md: { px: 32, className: "h-8 w-8" },
+  lg: { px: 56, className: "h-14 w-14" },
+} as const;
+
+function ChatAvatar({ size }: { size: keyof typeof avatarSizes }): JSX.Element {
+  const dim = avatarSizes[size];
+  return (
+    <Image
+      alt="LibraAI Assistant"
+      className={`${dim.className} shrink-0 rounded-full object-cover`}
+      height={dim.px}
+      src={AVATAR_SRC}
+      width={dim.px}
+    />
+  );
+}
 
 function CloseIcon() {
   return (
@@ -25,24 +47,6 @@ function CloseIcon() {
     >
       <path d="m6 6 12 12" />
       <path d="M18 6 6 18" />
-    </svg>
-  );
-}
-
-function ChatIcon() {
-  return (
-    <svg
-      aria-hidden
-      className="h-6 w-6 shrink-0"
-      fill="none"
-      stroke="currentColor"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth="1.8"
-      viewBox="0 0 24 24"
-    >
-      <path d="M21 12a8 8 0 0 1-8 8H6l-4 2 1.5-4A9 9 0 1 1 21 12Z" />
-      <path d="M8 12h.01M12 12h.01M16 12h.01" />
     </svg>
   );
 }
@@ -105,7 +109,10 @@ export function ChatWidget(): JSX.Element {
           id="libra-chat-panel"
         >
           <header className="flex items-center justify-between border-b border-line px-4 py-3">
-            <h2 className="text-sm font-bold text-ink">LibraAI Assistant</h2>
+            <div className="flex items-center gap-2">
+              <ChatAvatar size="sm" />
+              <h2 className="text-sm font-bold text-ink">LibraAI Assistant</h2>
+            </div>
             <button
               aria-label="Close assistant"
               className="btn-icon"
@@ -122,22 +129,30 @@ export function ChatWidget(): JSX.Element {
             ref={listRef}
           >
             {messages.length === 0 ? (
-              <p className="max-w-[85%] break-words whitespace-pre-wrap rounded-2xl rounded-bl-md bg-canvas px-3 py-2 text-sm text-ink">
-                {WELCOME_COPY}
-              </p>
+              <div className="flex items-start gap-2">
+                <ChatAvatar size="sm" />
+                <p className="max-w-[85%] break-words whitespace-pre-wrap rounded-2xl rounded-bl-md bg-canvas px-3 py-2 text-sm text-ink">
+                  {WELCOME_COPY}
+                </p>
+              </div>
             ) : null}
-            {messages.map((message) => (
-              <p
-                className={
-                  message.role === "user"
-                    ? "ml-auto max-w-[85%] break-words whitespace-pre-wrap rounded-2xl rounded-br-md bg-accent-soft px-3 py-2 text-sm text-ink"
-                    : "max-w-[85%] break-words whitespace-pre-wrap rounded-2xl rounded-bl-md bg-canvas px-3 py-2 text-sm text-ink"
-                }
-                key={message.id}
-              >
-                {message.content}
-              </p>
-            ))}
+            {messages.map((message) =>
+              message.role === "user" ? (
+                <p
+                  className="ml-auto max-w-[85%] break-words whitespace-pre-wrap rounded-2xl rounded-br-md bg-accent-soft px-3 py-2 text-sm text-ink"
+                  key={message.id}
+                >
+                  {message.content}
+                </p>
+              ) : (
+                <div className="flex items-start gap-2" key={message.id}>
+                  <ChatAvatar size="sm" />
+                  <p className="max-w-[85%] break-words whitespace-pre-wrap rounded-2xl rounded-bl-md bg-canvas px-3 py-2 text-sm text-ink">
+                    {message.content}
+                  </p>
+                </div>
+              ),
+            )}
             {sending ? (
               <p className="text-xs font-medium text-muted">Thinking…</p>
             ) : null}
@@ -205,12 +220,16 @@ export function ChatWidget(): JSX.Element {
         aria-controls="libra-chat-panel"
         aria-expanded={open}
         aria-label={open ? "Close assistant" : "Open assistant"}
-        className="flex h-14 w-14 items-center justify-center rounded-full bg-accent text-white shadow-lg transition hover:opacity-90"
+        className={
+          open
+            ? "flex h-14 w-14 items-center justify-center rounded-full bg-accent text-white shadow-lg transition hover:opacity-90"
+            : "flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-black shadow-lg transition hover:opacity-90"
+        }
         onClick={toggle}
         ref={launcherRef}
         type="button"
       >
-        {open ? <CloseIcon /> : <ChatIcon />}
+        {open ? <CloseIcon /> : <ChatAvatar size="lg" />}
       </button>
     </div>
   );
