@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
+
+import { ChatProvider } from "@/components/ChatProvider";
 import "./globals.css";
 
 const display = Manrope({
@@ -16,7 +18,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${display.variable} h-full antialiased`}>
-      <body className="min-h-full font-sans text-ink">{children}</body>
+      <body className="min-h-full font-sans text-ink">
+        <ChatProvider>{children}</ChatProvider>
+      </body>
     </html>
   );
 }
