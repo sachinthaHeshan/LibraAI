@@ -11,6 +11,7 @@ import { createBooksRoutes } from "./routes/books.js";
 import { createHealthRoutes } from "./routes/health.js";
 import { createLoansRoutes } from "./routes/loans.js";
 import { createMembersRoutes } from "./routes/members.js";
+import { createStaffRoutes } from "./routes/staff.js";
 
 export async function buildApp(app: FastifyInstance = Fastify()) {
   const db = createDb(env.DATABASE_URL);
@@ -44,6 +45,7 @@ export async function buildApp(app: FastifyInstance = Fastify()) {
   await app.register(createBooksRoutes(db));
   await app.register(createMembersRoutes(db));
   await app.register(createLoansRoutes(db));
+  await app.register(createStaffRoutes(db));
 
   return app;
 }

@@ -1,15 +1,7 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { buildApp } from "../create-app.js";
+import { decodePayload } from "./jwt-decode.js";
 import { TEST_ADMIN } from "./test-admin.js";
-
-function decodePayload(token: string) {
-  const [, payload] = token.split(".");
-  return JSON.parse(Buffer.from(payload!, "base64url").toString("utf8")) as {
-    sub: string;
-    orgId: string;
-    email: string;
-  };
-}
 
 describe("POST /auth/login", () => {
   let app: Awaited<ReturnType<typeof buildApp>>;
