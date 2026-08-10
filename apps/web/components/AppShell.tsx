@@ -116,7 +116,7 @@ export function AppShell({
     <div className="min-h-screen bg-canvas lg:grid lg:grid-cols-[248px_minmax(0,1fr)]">
       <aside className="hidden border-r border-line bg-white lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col">
         <div className="flex items-center px-4 py-5">
-          <Logo size="md" />
+          <Logo href="/overview" size="md" />
         </div>
 
         <nav aria-label="Main navigation" className="flex flex-1 flex-col gap-1 px-3 py-2">
@@ -162,7 +162,7 @@ export function AppShell({
       <div className="min-w-0">
         <header className="sticky top-0 z-30 border-b border-line bg-white/90 px-4 py-3 backdrop-blur sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
-            <Logo className="lg:hidden" size="sm" />
+            <Logo className="lg:hidden" href="/overview" size="sm" />
 
             <div className="mx-auto w-full max-w-xl">
               {search ?? (

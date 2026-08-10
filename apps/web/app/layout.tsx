@@ -11,8 +11,9 @@ const display = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "LibraAI | Library Management",
-  description: "LibraAI library management system — catalogue, members, and loans.",
+  title: "LibraAI | AI Library Management",
+  description:
+    "Run your library desk with AI — catalogue, members, loans, and plans from LKR 3,000/mo.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

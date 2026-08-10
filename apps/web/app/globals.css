@@ -257,3 +257,37 @@ body {
   border-radius: inherit;
   background: var(--accent);
 }
+
+@keyframes landing-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.landing-hero {
+  background:
+    radial-gradient(ellipse 80% 60% at 20% -10%, #dce8f8 0%, transparent 55%),
+    radial-gradient(ellipse 60% 50% at 90% 10%, #eaf0ff 0%, transparent 50%),
+    var(--canvas);
+}
+
+.landing-animate {
+  animation: landing-fade-up 0.7s ease both;
+}
+
+.landing-animate-delay-1 {
+  animation-delay: 0.08s;
+}
+
+.landing-animate-delay-2 {
+  animation-delay: 0.16s;
+}
+
+.landing-animate-delay-3 {
+  animation-delay: 0.24s;
+}

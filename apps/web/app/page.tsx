@@ -1,23 +1,23 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
-
-import { getToken } from "@/lib/auth";
+import { LandingAi } from "@/components/landing/LandingAi";
+import { LandingFooterCta } from "@/components/landing/LandingFooterCta";
+import { LandingHero } from "@/components/landing/LandingHero";
+import { LandingNav } from "@/components/landing/LandingNav";
+import { LandingPlatform } from "@/components/landing/LandingPlatform";
+import { LandingPricing } from "@/components/landing/LandingPricing";
 
 export default function Home() {
-  const router = useRouter();
-
-  useEffect(() => {
-    router.replace(getToken() ? "/overview" : "/login");
-  }, [router]);
-
   return (
-    <main className="flex min-h-screen items-center justify-center bg-canvas">
-      <div className="flex flex-col items-center gap-3">
-        <div className="skeleton h-10 w-10 rounded-xl" />
-        <p className="text-sm font-medium text-muted">Loading LibraAI…</p>
+    <main className="min-h-screen overflow-x-hidden bg-canvas">
+      <div className="landing-hero">
+        <LandingNav />
+        <LandingHero />
       </div>
+      <LandingAi />
+      <LandingPlatform />
+      <LandingPricing />
+      <LandingFooterCta />
     </main>
   );
 }

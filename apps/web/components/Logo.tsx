@@ -15,7 +15,7 @@ const sizes = {
 };
 
 export function Logo({
-  href = "/overview",
+  href = "/",
   className = "",
   size = "md",
   priority = false,
