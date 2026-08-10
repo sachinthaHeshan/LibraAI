@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 
+import { ChatWidget } from "@/components/ChatWidget";
 import { Logo } from "@/components/Logo";
 import { clearToken } from "@/lib/auth";
 
@@ -274,6 +275,8 @@ export function AppShell({
           );
         })}
       </nav>
+
+      <ChatWidget />
     </div>
   );
 }
