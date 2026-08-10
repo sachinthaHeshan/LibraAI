@@ -92,7 +92,6 @@ export default function StaffPage() {
           Add staff
         </button>
       }
-      subtitle="Team"
       title="Staff"
     >
       <div className="mb-5 grid gap-4 sm:grid-cols-2">

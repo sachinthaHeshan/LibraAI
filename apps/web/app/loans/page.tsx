@@ -100,7 +100,6 @@ export default function LoansPage() {
 
   return (
     <AppShell
-      subtitle="Lending"
       title="Loans"
     >
       <div className="mb-5 grid gap-4 sm:grid-cols-2">

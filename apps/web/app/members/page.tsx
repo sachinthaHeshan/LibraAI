@@ -89,7 +89,6 @@ export default function MembersPage() {
           Add member
         </button>
       }
-      subtitle="Directory"
       title="Members"
     >
       <div className="mb-5 grid gap-4 sm:grid-cols-2">
