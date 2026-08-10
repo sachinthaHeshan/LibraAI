@@ -5,7 +5,7 @@ import { ASK_PLACEHOLDER, submitAskDraft } from "./ask-bar";
 describe("ask-bar helpers", () => {
   it("exposes the overview ask placeholder copy", () => {
     expect(ASK_PLACEHOLDER).toBe(
-      "Ask about your work, ideate, or start new chat.",
+      "Ask about loans, books, members, or catalogue tasks.",
     );
   });
 

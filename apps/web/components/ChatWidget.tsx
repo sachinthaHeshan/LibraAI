@@ -151,7 +151,7 @@ export function ChatWidget(): JSX.Element {
                 disabled={sending}
                 onChange={(event) => setDraft(event.target.value)}
                 onKeyDown={onKeyDown}
-                placeholder="Ask LibraAI…"
+                placeholder="Ask about loans, books, or members…"
                 rows={2}
                 ref={textareaRef}
                 value={draft}

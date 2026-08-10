@@ -1,7 +1,7 @@
 import { isSendableContent } from "./chat";
 
 export const ASK_PLACEHOLDER =
-  "Ask about your work, ideate, or start new chat.";
+  "Ask about loans, books, members, or catalogue tasks.";
 
 export function submitAskDraft(
   draft: string,

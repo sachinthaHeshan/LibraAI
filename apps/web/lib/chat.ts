@@ -12,7 +12,8 @@ export const PLACEHOLDER_ASSISTANT_REPLY =
 
 export const WELCOME_COPY = "Hi! What can I help you with today?";
 
-export const CHAT_FOLLOWUP_PLACEHOLDER = "Type your follow up...";
+export const CHAT_FOLLOWUP_PLACEHOLDER =
+  "Ask about a loan, book, member, or return…";
 
 export function isSendableContent(content: string): boolean {
   return content.trim().length > 0;
