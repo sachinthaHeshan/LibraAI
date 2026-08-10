@@ -6,6 +6,7 @@
     "dev:web": "pnpm --filter @libra/web dev",
     "db:generate": "pnpm --filter @libra/db generate",
     "db:migrate": "pnpm --filter @libra/db migrate",
+    "db:studio": "pnpm --filter @libra/db studio",
     "db:build": "pnpm --filter @libra/db build",
     "db:seed": "pnpm --filter @libra/api seed",
     "test:api": "pnpm --filter @libra/api test"

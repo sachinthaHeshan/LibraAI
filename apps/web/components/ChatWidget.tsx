@@ -13,12 +13,12 @@ import {
 import { useChat } from "@/components/ChatProvider";
 import { WELCOME_COPY } from "@/lib/chat";
 
-const AVATAR_SRC = "/chat-avatar.png";
+const AVATAR_SRC = "/chat-avatar.png?v=3";
 
 const avatarSizes = {
   sm: { px: 28, className: "h-7 w-7" },
   md: { px: 32, className: "h-8 w-8" },
-  lg: { px: 56, className: "h-14 w-14" },
+  lg: { px: 56, className: "h-14 w-14 drop-shadow-md" },
 } as const;
 
 function ChatAvatar({ size }: { size: keyof typeof avatarSizes }): JSX.Element {
@@ -26,9 +26,10 @@ function ChatAvatar({ size }: { size: keyof typeof avatarSizes }): JSX.Element {
   return (
     <Image
       alt="LibraAI Assistant"
-      className={`${dim.className} shrink-0 rounded-full object-cover`}
+      className={`${dim.className} shrink-0 object-contain`}
       height={dim.px}
       src={AVATAR_SRC}
+      unoptimized
       width={dim.px}
     />
   );
@@ -223,7 +224,7 @@ export function ChatWidget(): JSX.Element {
         className={
           open
             ? "flex h-14 w-14 items-center justify-center rounded-full bg-accent text-white shadow-lg transition hover:opacity-90"
-            : "flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-black shadow-lg transition hover:opacity-90"
+            : "flex h-14 w-14 items-center justify-center rounded-full bg-transparent transition hover:opacity-90"
         }
         onClick={toggle}
         ref={launcherRef}

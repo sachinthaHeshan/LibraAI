@@ -44,6 +44,10 @@ docker:
 migrate:
 	pnpm db:migrate
 
+# Open Drizzle Studio
+studio:
+	pnpm db:studio
+
 # Seed admin user (prompts for input when run interactively)
 seed:
 	pnpm --filter @libra/api seed
