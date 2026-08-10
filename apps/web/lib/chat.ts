@@ -10,8 +10,9 @@ export type ChatMessage = {
 export const PLACEHOLDER_ASSISTANT_REPLY =
   "AI replies aren't connected yet — this is a preview.";
 
-export const WELCOME_COPY =
-  "Hi — I'm the LibraAI assistant preview. Ask anything; replies are placeholders for now.";
+export const WELCOME_COPY = "Hi! What can I help you with today?";
+
+export const CHAT_FOLLOWUP_PLACEHOLDER = "Type your follow up...";
 
 export function isSendableContent(content: string): boolean {
   return content.trim().length > 0;

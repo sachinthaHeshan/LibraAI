@@ -13,6 +13,8 @@ import { useRouter } from "next/navigation";
 import { useChat } from "@/components/ChatProvider";
 import { ASK_PLACEHOLDER, submitAskDraft } from "@/lib/ask-bar";
 
+const CLOSE_ANIMATION_MS = 380;
+
 function SparklesIcon() {
   return (
     <svg aria-hidden className="h-5 w-5 shrink-0" viewBox="0 0 24 24">
@@ -34,12 +36,51 @@ export function OverviewAskBar(): JSX.Element {
   const router = useRouter();
   const { sendMessage, sending } = useChat();
   const [expanded, setExpanded] = useState(false);
+  const [closing, setClosing] = useState(false);
   const [draft, setDraft] = useState("");
+  const rootRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  const isOpen = expanded || closing;
+
   useEffect(() => {
-    if (expanded) textareaRef.current?.focus();
-  }, [expanded]);
+    if (!expanded || closing) return;
+    const timer = window.setTimeout(() => textareaRef.current?.focus(), 140);
+    return () => window.clearTimeout(timer);
+  }, [expanded, closing]);
+
+  useEffect(() => {
+    if (!expanded || closing) return;
+
+    function onPointerDown(event: PointerEvent) {
+      if (rootRef.current?.contains(event.target as Node)) return;
+      setClosing(true);
+    }
+
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [expanded, closing]);
+
+  useEffect(() => {
+    if (!closing) return;
+
+    const timer = window.setTimeout(() => {
+      setExpanded(false);
+      setClosing(false);
+    }, CLOSE_ANIMATION_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [closing]);
+
+  function open() {
+    setClosing(false);
+    setExpanded(true);
+  }
+
+  function close() {
+    if (!expanded || closing) return;
+    setClosing(true);
+  }
 
   function submit() {
     if (sending) return;
@@ -60,16 +101,22 @@ export function OverviewAskBar(): JSX.Element {
       event.preventDefault();
       submit();
     }
-    if (event.key === "Escape" && !draft.trim()) {
-      setExpanded(false);
+    if (event.key === "Escape") {
+      event.preventDefault();
+      close();
     }
   }
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-[5.5rem] z-30 mx-auto w-[min(100%-1.5rem,40rem)] lg:bottom-6">
-      {expanded ? (
+    <div
+      className="pointer-events-none fixed inset-x-0 bottom-[5.5rem] z-30 mx-auto w-[min(100%-1.5rem,40rem)] lg:bottom-6"
+      ref={rootRef}
+    >
+      {isOpen ? (
         <form
-          className="ask-shell ask-shell-composer pointer-events-auto bg-white p-4 shadow-lg"
+          className={`ask-shell ask-shell-composer ask-bar-surface pointer-events-auto bg-white p-4 shadow-lg ${
+            closing ? "ask-bar-shrink-out" : "ask-bar-grow-in"
+          }`}
           onSubmit={onSubmit}
         >
           <textarea
@@ -128,8 +175,8 @@ export function OverviewAskBar(): JSX.Element {
         <button
           aria-expanded={false}
           aria-label="Open ask bar"
-          className="ask-shell ask-shell-pill pointer-events-auto flex w-full items-center gap-3 bg-white px-5 py-3.5 text-left shadow-lg"
-          onClick={() => setExpanded(true)}
+          className="ask-shell ask-shell-pill ask-bar-surface ask-bar-grow-in pointer-events-auto flex w-full items-center gap-3 bg-white px-5 py-3.5 text-left shadow-lg"
+          onClick={open}
           type="button"
         >
           <SparklesIcon />

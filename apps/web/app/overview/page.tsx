@@ -6,6 +6,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { OverviewAskBar } from "@/components/OverviewAskBar";
 import { apiFetch } from "@/lib/api";
+import {
+  type CurrentUser,
+  getCurrentUser,
+  userDisplayName,
+  userInitials,
+} from "@/lib/current-user";
 import { lendingActivitySeries } from "@/lib/lending-activity";
 
 type Book = {
@@ -121,26 +127,31 @@ export default function OverviewPage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [loans, setLoans] = useState<Loan[]>([]);
   const [activityLoans, setActivityLoans] = useState<ActivityLoan[]>([]);
+  const [user, setUser] = useState<CurrentUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [nextBooks, nextMembers, nextLoans, nextActivityLoans] = await Promise.all([
-        apiFetch<Book[]>("/books"),
-        apiFetch<Member[]>("/members"),
-        apiFetch<Loan[]>("/loans?status=borrowed"),
-        apiFetch<ActivityLoan[]>("/loans"),
-      ]);
+      const [nextBooks, nextMembers, nextLoans, nextActivityLoans, nextUser] =
+        await Promise.all([
+          apiFetch<Book[]>("/books"),
+          apiFetch<Member[]>("/members"),
+          apiFetch<Loan[]>("/loans?status=borrowed"),
+          apiFetch<ActivityLoan[]>("/loans"),
+          getCurrentUser(),
+        ]);
       setBooks(nextBooks);
       setMembers(nextMembers);
       setLoans(nextLoans);
       setActivityLoans(nextActivityLoans);
+      setUser(nextUser);
     } catch {
       setBooks([]);
       setMembers([]);
       setLoans([]);
       setActivityLoans([]);
+      setUser(null);
     } finally {
       setLoading(false);
     }
@@ -149,6 +160,12 @@ export default function OverviewPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  const displayName = user ? userDisplayName(user) : "Library Admin";
+  const displayRole = user
+    ? `Administrator @ ${user.organization.name}`
+    : "Administrator";
+  const initials = user ? userInitials(user) : "A";
 
   const totalCopies = books.reduce((sum, book) => sum + book.totalCopies, 0);
   const availableCopies = books.reduce((sum, book) => sum + book.availableCopies, 0);
@@ -188,10 +205,10 @@ export default function OverviewPage() {
         <div className="space-y-5">
           <div className="card px-5 py-6 text-center">
             <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-[#c7d2fe] text-2xl font-bold text-[#3730a3]">
-              A
+              {initials}
             </div>
-            <h2 className="text-lg font-bold text-ink">Library Admin</h2>
-            <p className="mt-1 text-sm text-muted">Administrator @ LibraAI</p>
+            <h2 className="text-lg font-bold text-ink">{displayName}</h2>
+            <p className="mt-1 text-sm text-muted">{displayRole}</p>
           </div>
 
           <div className="card px-5 py-5">

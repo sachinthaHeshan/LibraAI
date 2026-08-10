@@ -10,8 +10,7 @@ import {
 
 import { AppShell } from "@/components/AppShell";
 import { useChat } from "@/components/ChatProvider";
-import { ASK_PLACEHOLDER } from "@/lib/ask-bar";
-import { WELCOME_COPY, isSendableContent } from "@/lib/chat";
+import { CHAT_FOLLOWUP_PLACEHOLDER, WELCOME_COPY, isSendableContent } from "@/lib/chat";
 
 export default function ChatPage() {
   const { messages, sending, sendMessage } = useChat();
@@ -43,48 +42,50 @@ export default function ChatPage() {
 
   return (
     <AppShell title="Chat">
-      <div className="card flex h-[min(70vh,640px)] flex-col overflow-hidden">
+      <div className="mx-auto flex w-full max-w-3xl min-h-[calc(100dvh-13rem)] flex-col pb-24 lg:min-h-[calc(100dvh-11rem)] lg:pb-6">
         <div
           aria-live="polite"
-          className="flex-1 space-y-3 overflow-y-auto px-4 py-4"
+          className="flex flex-1 flex-col gap-6 overflow-y-auto px-1 py-2"
           ref={listRef}
         >
           {messages.length === 0 ? (
-            <p className="max-w-[85%] break-words whitespace-pre-wrap rounded-2xl rounded-bl-md bg-canvas px-3 py-2 text-sm text-ink">
-              {WELCOME_COPY}
-            </p>
+            <p className="max-w-xl text-sm leading-relaxed text-ink">{WELCOME_COPY}</p>
           ) : null}
-          {messages.map((message) => (
-            <p
-              className={
-                message.role === "user"
-                  ? "ml-auto max-w-[85%] break-words whitespace-pre-wrap rounded-2xl rounded-br-md bg-accent-soft px-3 py-2 text-sm text-ink"
-                  : "max-w-[85%] break-words whitespace-pre-wrap rounded-2xl rounded-bl-md bg-canvas px-3 py-2 text-sm text-ink"
-              }
-              key={message.id}
-            >
-              {message.content}
-            </p>
-          ))}
+          {messages.map((message) =>
+            message.role === "user" ? (
+              <div className="flex justify-end" key={message.id}>
+                <p className="max-w-[85%] break-words whitespace-pre-wrap rounded-lg bg-[#ebe8f5] px-3.5 py-2 text-sm text-ink">
+                  {message.content}
+                </p>
+              </div>
+            ) : (
+              <p
+                className="max-w-xl break-words whitespace-pre-wrap text-sm leading-relaxed text-ink"
+                key={message.id}
+              >
+                {message.content}
+              </p>
+            ),
+          )}
           {sending ? (
-            <p className="text-xs font-medium text-muted">Thinking…</p>
+            <p className="text-sm text-muted">Thinking…</p>
           ) : null}
         </div>
 
-        <form className="border-t border-line p-4" onSubmit={onSubmit}>
-          <div className="ask-shell ask-shell-composer p-3">
+        <form className="sticky bottom-0 pt-6" onSubmit={onSubmit}>
+          <div className="ask-shell ask-shell-composer bg-white p-4 shadow-lg">
             <textarea
               aria-label="Message"
               className="min-h-14 w-full resize-none bg-transparent text-sm text-ink outline-none placeholder:text-muted"
               disabled={sending}
               onChange={(event) => setDraft(event.target.value)}
               onKeyDown={onKeyDown}
-              placeholder={ASK_PLACEHOLDER}
+              placeholder={CHAT_FOLLOWUP_PLACEHOLDER}
               ref={textareaRef}
               rows={2}
               value={draft}
             />
-            <div className="mt-2 flex items-center justify-between">
+            <div className="mt-3 flex items-center justify-between">
               <span aria-hidden className="text-muted">
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24">
                   <path

@@ -55,6 +55,54 @@ describe("POST /auth/login", () => {
   });
 });
 
+describe("GET /auth/me", () => {
+  let app: Awaited<ReturnType<typeof buildApp>>;
+
+  beforeAll(async () => {
+    app = await buildApp();
+    await app.ready();
+  });
+
+  it("returns the logged-in admin and organization", async () => {
+    const login = await app.inject({
+      method: "POST",
+      url: "/auth/login",
+      payload: {
+        email: TEST_ADMIN.email,
+        password: TEST_ADMIN.password,
+      },
+    });
+    const { token } = login.json() as { token: string };
+
+    const res = await app.inject({
+      method: "GET",
+      url: "/auth/me",
+      headers: { authorization: `Bearer ${token}` },
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual({
+      id: expect.any(String),
+      firstName: TEST_ADMIN.firstName,
+      lastName: TEST_ADMIN.lastName,
+      email: TEST_ADMIN.email,
+      organization: {
+        id: expect.any(String),
+        name: "Test Library",
+      },
+    });
+  });
+
+  it("returns 401 without a token", async () => {
+    const res = await app.inject({
+      method: "GET",
+      url: "/auth/me",
+    });
+
+    expect(res.statusCode).toBe(401);
+  });
+});
+
 describe("POST /auth/signup", () => {
   let app: Awaited<ReturnType<typeof buildApp>>;
 

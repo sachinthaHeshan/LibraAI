@@ -47,6 +47,39 @@ export function createAuthRoutes(db: Db): FastifyPluginAsync {
       };
     });
 
+    app.get(
+      "/auth/me",
+      { preHandler: app.authenticate },
+      async (request) => {
+        const admin = await db.query.admins.findFirst({
+          where: eq(admins.id, request.user.sub),
+        });
+
+        if (!admin || admin.organizationId !== request.user.orgId) {
+          throw new AppError(401, "Unauthorized");
+        }
+
+        const organization = await db.query.organizations.findFirst({
+          where: eq(organizations.id, admin.organizationId),
+        });
+
+        if (!organization) {
+          throw new AppError(401, "Unauthorized");
+        }
+
+        return {
+          id: admin.id,
+          firstName: admin.firstName,
+          lastName: admin.lastName,
+          email: admin.email,
+          organization: {
+            id: organization.id,
+            name: organization.name,
+          },
+        };
+      },
+    );
+
     app.post("/auth/signup", async (request, reply) => {
       const body = signupBodySchema.parse(request.body);
 

@@ -2,12 +2,17 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 
 import { useChat } from "@/components/ChatProvider";
 import { ChatWidget } from "@/components/ChatWidget";
 import { Logo } from "@/components/Logo";
 import { clearToken } from "@/lib/auth";
+import {
+  type CurrentUser,
+  getCurrentUser,
+  userInitials,
+} from "@/lib/current-user";
 
 function NavIcon({ children }: { children: ReactNode }) {
   return (
@@ -34,6 +39,15 @@ const links = [
       <NavIcon>
         <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
         <path d="M9 22V12h6v10" />
+      </NavIcon>
+    ),
+  },
+  {
+    href: "/chat",
+    label: "Chat",
+    icon: (
+      <NavIcon>
+        <path d="M21 12a8 8 0 0 1-8 8H6l-4 2 1.5-4A9 9 0 1 1 21 12Z" />
       </NavIcon>
     ),
   },
@@ -105,12 +119,32 @@ export function AppShell({
   const pathname = usePathname();
   const router = useRouter();
   const { reset } = useChat();
+  const [user, setUser] = useState<CurrentUser | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    void getCurrentUser()
+      .then((nextUser) => {
+        if (active) setUser(nextUser);
+      })
+      .catch(() => {
+        if (active) setUser(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   function logout() {
     reset();
     clearToken();
     router.push("/login");
   }
+
+  const initials = user ? userInitials(user) : "A";
+  const ariaLabel = user
+    ? `${user.firstName} ${user.lastName}`
+    : "Admin";
 
   return (
     <div className="min-h-screen bg-canvas lg:grid lg:grid-cols-[248px_minmax(0,1fr)]">
@@ -224,10 +258,10 @@ export function AppShell({
                 <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-danger" />
               </button>
               <span
-                aria-label="Admin"
+                aria-label={ariaLabel}
                 className="ml-1 flex h-9 w-9 items-center justify-center rounded-full bg-[#c7d2fe] text-xs font-bold text-[#3730a3]"
               >
-                A
+                {initials}
               </span>
             </div>
           </div>
@@ -274,7 +308,7 @@ export function AppShell({
 
       <nav
         aria-label="Mobile navigation"
-        className="fixed inset-x-3 bottom-3 z-40 grid grid-cols-5 gap-1 rounded-2xl border border-line bg-white/95 p-1.5 shadow-lg backdrop-blur lg:hidden"
+        className="fixed inset-x-3 bottom-3 z-40 grid grid-cols-6 gap-1 rounded-2xl border border-line bg-white/95 p-1.5 shadow-lg backdrop-blur lg:hidden"
       >
         {links.map((link) => {
           const active = pathname.startsWith(link.href);
