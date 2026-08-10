@@ -105,7 +105,6 @@ export default function BooksPage() {
           Add book
         </button>
       }
-      subtitle="Catalogue"
       title="Books"
     >
       <form className="relative mb-5 max-w-md" onSubmit={handleSearch}>
@@ -122,7 +121,7 @@ export default function BooksPage() {
         </span>
         <input
           aria-label="Search books"
-          className="field pl-11"
+          className="field pl-12"
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Search title, author, or ISBN"
           value={query}

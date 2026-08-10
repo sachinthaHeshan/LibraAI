@@ -337,7 +337,6 @@ export default function OverviewPage() {
           </div>
         </div>
       }
-      subtitle="Last 12 months"
       title="Overview"
     >
       <div className="pb-28 lg:pb-24">
