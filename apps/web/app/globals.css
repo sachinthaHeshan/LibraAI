@@ -302,45 +302,103 @@ body {
   overflow: hidden;
 }
 
-.landing-aurora-blob,
+.landing-aurora-section {
+  opacity: 0.72;
+  mask-image: linear-gradient(180deg, #000 0%, #000 55%, transparent 100%);
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 55%, transparent 100%);
+}
+
 .landing-aurora-blob-a,
 .landing-aurora-blob-b,
-.landing-aurora-blob-c {
+.landing-aurora-blob-c,
+.landing-aurora-blob-d,
+.landing-aurora-blob-e,
+.landing-aurora-blob-s1,
+.landing-aurora-blob-s2 {
   position: absolute;
   border-radius: 999px;
-  filter: blur(48px);
-  opacity: 0.55;
-  will-change: transform;
-  animation: landing-aurora-drift 28s ease-in-out infinite alternate;
+  filter: blur(52px);
+  will-change: transform, opacity;
+  animation:
+    landing-aurora-drift 18s ease-in-out infinite alternate,
+    landing-aurora-pulse 10s ease-in-out infinite alternate;
 }
 
 .landing-aurora-blob-a {
-  top: -12%;
-  left: -8%;
-  width: min(52vw, 28rem);
-  height: min(42vw, 22rem);
+  top: -14%;
+  left: -10%;
+  width: min(56vw, 30rem);
+  height: min(44vw, 24rem);
   background: #b8d0f5;
-  animation-duration: 32s;
+  opacity: 0.58;
+  animation-duration: 16s, 11s;
 }
 
 .landing-aurora-blob-b {
-  top: 8%;
-  right: -10%;
-  width: min(48vw, 26rem);
-  height: min(40vw, 20rem);
+  top: 4%;
+  right: -12%;
+  width: min(50vw, 28rem);
+  height: min(42vw, 22rem);
   background: #c9d8ff;
-  animation-duration: 36s;
-  animation-delay: -8s;
+  opacity: 0.55;
+  animation-duration: 20s, 13s;
+  animation-delay: -6s, -3s;
 }
 
 .landing-aurora-blob-c {
-  bottom: -18%;
-  left: 28%;
-  width: min(56vw, 30rem);
-  height: min(36vw, 18rem);
+  bottom: -20%;
+  left: 22%;
+  width: min(58vw, 32rem);
+  height: min(38vw, 20rem);
   background: #dce8f8;
-  animation-duration: 40s;
-  animation-delay: -16s;
+  opacity: 0.5;
+  animation-duration: 22s, 12s;
+  animation-delay: -12s, -5s;
+}
+
+.landing-aurora-blob-d {
+  top: 28%;
+  left: 42%;
+  width: min(40vw, 22rem);
+  height: min(34vw, 18rem);
+  background: #a8b8f0;
+  opacity: 0.42;
+  animation-duration: 14s, 9s;
+  animation-delay: -4s, -7s;
+}
+
+.landing-aurora-blob-e {
+  bottom: 8%;
+  right: 18%;
+  width: min(36vw, 18rem);
+  height: min(30vw, 16rem);
+  background: #d4e4fc;
+  opacity: 0.48;
+  animation-duration: 19s, 14s;
+  animation-delay: -9s, -2s;
+}
+
+.landing-aurora-blob-s1 {
+  top: -20%;
+  left: -5%;
+  width: min(48vw, 26rem);
+  height: min(36vw, 18rem);
+  background: #c9d8ff;
+  opacity: 0.38;
+  filter: blur(56px);
+  animation-duration: 24s, 16s;
+}
+
+.landing-aurora-blob-s2 {
+  top: 10%;
+  right: -8%;
+  width: min(44vw, 24rem);
+  height: min(32vw, 16rem);
+  background: #eaf0ff;
+  opacity: 0.34;
+  filter: blur(56px);
+  animation-duration: 28s, 18s;
+  animation-delay: -10s, -4s;
 }
 
 @keyframes landing-aurora-drift {
@@ -348,15 +406,27 @@ body {
     transform: translate3d(0, 0, 0) scale(1);
   }
   to {
-    transform: translate3d(3%, -4%, 0) scale(1.06);
+    transform: translate3d(10%, -9%, 0) scale(1.1);
+  }
+}
+
+@keyframes landing-aurora-pulse {
+  from {
+    opacity: 0.4;
+  }
+  to {
+    opacity: 0.65;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .landing-aurora-blob,
   .landing-aurora-blob-a,
   .landing-aurora-blob-b,
-  .landing-aurora-blob-c {
+  .landing-aurora-blob-c,
+  .landing-aurora-blob-d,
+  .landing-aurora-blob-e,
+  .landing-aurora-blob-s1,
+  .landing-aurora-blob-s2 {
     animation: none;
   }
 
