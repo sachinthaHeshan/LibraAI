@@ -452,7 +452,7 @@ main > section:last-of-type .btn-primary:hover:not(:disabled) {
 }
 
 .ask-shell-pill {
-  border-radius: 9999px;
+  border-radius: 2.75rem;
 }
 
 .ask-shell-composer {
@@ -460,61 +460,77 @@ main > section:last-of-type .btn-primary:hover:not(:disabled) {
 }
 
 .ask-bar-surface {
+  --ask-radius-pill: 2.75rem;
+  --ask-radius-composer: 1.25rem;
+  --ask-radius: var(--ask-radius-pill);
+  border-radius: var(--ask-radius);
   transform-origin: bottom center;
   backface-visibility: hidden;
+  transform: translateZ(0);
+  overflow: hidden;
+  transition: border-radius 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform, opacity, border-radius;
 }
 
-.ask-bar-grow-in {
-  animation: ask-bar-grow-in 0.52s cubic-bezier(0.16, 1, 0.3, 1) both;
+.ask-bar-surface[data-shape="composer"] {
+  --ask-radius: var(--ask-radius-composer);
 }
 
-.ask-bar-shrink-out {
-  animation: ask-bar-shrink-out 0.38s cubic-bezier(0.4, 0, 0.2, 1) both;
+.ask-bar-surface[data-shape="pill"] {
+  --ask-radius: var(--ask-radius-pill);
+}
+
+.ask-bar-surface[data-motion="exit"] {
+  transition-duration: 0.32s;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ask-bar-surface[data-motion="enter"] {
+  transition-duration: 0.42s;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ask-bar-enter {
+  animation: ask-bar-enter 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.ask-bar-exit {
+  animation: ask-bar-exit 0.32s cubic-bezier(0.4, 0, 0.2, 1) both;
   pointer-events: none;
 }
 
-@keyframes ask-bar-grow-in {
-  0% {
+@keyframes ask-bar-enter {
+  from {
     opacity: 0;
-    transform: scale(0.94) translateY(12px);
+    transform: translateZ(0) scale(0.96) translateY(10px);
   }
 
-  35% {
-    opacity: 0.72;
-    transform: scale(0.97) translateY(6px);
-  }
-
-  65% {
-    opacity: 0.9;
-    transform: scale(0.995) translateY(2px);
-  }
-
-  100% {
+  to {
     opacity: 1;
-    transform: scale(1) translateY(0);
+    transform: translateZ(0) scale(1) translateY(0);
   }
 }
 
-@keyframes ask-bar-shrink-out {
-  0% {
+@keyframes ask-bar-exit {
+  from {
     opacity: 1;
-    transform: scale(1) translateY(0);
+    transform: translateZ(0) scale(1) translateY(0);
   }
 
-  40% {
-    opacity: 0.82;
-    transform: scale(0.985) translateY(2px);
-  }
-
-  100% {
+  to {
     opacity: 0;
-    transform: scale(0.94) translateY(10px);
+    transform: translateZ(0) scale(0.96) translateY(8px);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ask-bar-grow-in,
-  .ask-bar-shrink-out {
+  .ask-bar-surface {
+    transition: none;
+    will-change: auto;
+  }
+
+  .ask-bar-enter,
+  .ask-bar-exit {
     animation: none;
   }
 }

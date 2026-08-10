@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  type AnimationEvent,
   type FormEvent,
   type JSX,
   type KeyboardEvent,
@@ -13,7 +14,9 @@ import { useRouter } from "next/navigation";
 import { useChat } from "@/components/ChatProvider";
 import { ASK_PLACEHOLDER, submitAskDraft } from "@/lib/ask-bar";
 
-const CLOSE_ANIMATION_MS = 380;
+type Motion = "idle" | "enter" | "exit";
+type Surface = "pill" | "composer";
+type Shape = "pill" | "composer";
 
 function SparklesIcon() {
   return (
@@ -35,51 +38,92 @@ function SparklesIcon() {
 export function OverviewAskBar(): JSX.Element {
   const router = useRouter();
   const { sendMessage, sending } = useChat();
-  const [expanded, setExpanded] = useState(false);
-  const [closing, setClosing] = useState(false);
+  const [surface, setSurface] = useState<Surface>("pill");
+  const [shape, setShape] = useState<Shape>("pill");
+  const [motion, setMotion] = useState<Motion>("idle");
   const [draft, setDraft] = useState("");
   const rootRef = useRef<HTMLDivElement>(null);
+  const shellRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const motionRef = useRef<Motion>("idle");
 
-  const isOpen = expanded || closing;
+  const isComposer = surface === "composer";
+  const isOpen = isComposer || motion === "exit";
 
   useEffect(() => {
-    if (!expanded || closing) return;
-    const timer = window.setTimeout(() => textareaRef.current?.focus(), 140);
+    motionRef.current = motion;
+  }, [motion]);
+
+  useEffect(() => {
+    if (motion === "idle") return;
+
+    const fallbackMs = motion === "enter" ? 460 : 360;
+    const timer = window.setTimeout(() => {
+      if (motionRef.current === "enter") {
+        setMotion("idle");
+      }
+      if (motionRef.current === "exit") {
+        setSurface("pill");
+        setShape("pill");
+        setMotion("idle");
+      }
+    }, fallbackMs);
+
     return () => window.clearTimeout(timer);
-  }, [expanded, closing]);
+  }, [motion]);
 
   useEffect(() => {
-    if (!expanded || closing) return;
+    if (!isComposer || motion !== "idle") return;
+    const timer = window.setTimeout(() => textareaRef.current?.focus(), 180);
+    return () => window.clearTimeout(timer);
+  }, [isComposer, motion]);
+
+  useEffect(() => {
+    if (!isComposer || motion === "exit") return;
 
     function onPointerDown(event: PointerEvent) {
       if (rootRef.current?.contains(event.target as Node)) return;
-      setClosing(true);
+      if (motionRef.current === "exit") return;
+      close();
     }
 
     document.addEventListener("pointerdown", onPointerDown);
     return () => document.removeEventListener("pointerdown", onPointerDown);
-  }, [expanded, closing]);
-
-  useEffect(() => {
-    if (!closing) return;
-
-    const timer = window.setTimeout(() => {
-      setExpanded(false);
-      setClosing(false);
-    }, CLOSE_ANIMATION_MS);
-
-    return () => window.clearTimeout(timer);
-  }, [closing]);
+  }, [isComposer, motion]);
 
   function open() {
-    setClosing(false);
-    setExpanded(true);
+    if (motion === "enter") return;
+    if (motion === "exit") {
+      setSurface("composer");
+      setMotion("enter");
+      requestAnimationFrame(() => setShape("composer"));
+      return;
+    }
+    if (isComposer && motion === "idle") return;
+    setSurface("composer");
+    setMotion("enter");
+    requestAnimationFrame(() => setShape("composer"));
   }
 
   function close() {
-    if (!expanded || closing) return;
-    setClosing(true);
+    if (!isComposer || motion === "exit") return;
+    setShape("pill");
+    setMotion("exit");
+  }
+
+  function onShellAnimationEnd(event: AnimationEvent<HTMLDivElement>) {
+    if (event.target !== shellRef.current) return;
+
+    if (motionRef.current === "enter") {
+      setMotion("idle");
+      return;
+    }
+
+    if (motionRef.current === "exit") {
+      setSurface("pill");
+      setShape("pill");
+      setMotion("idle");
+    }
   }
 
   function submit() {
@@ -107,82 +151,92 @@ export function OverviewAskBar(): JSX.Element {
     }
   }
 
+  const shellMotionClass =
+    motion === "enter"
+      ? "ask-bar-enter"
+      : motion === "exit"
+        ? "ask-bar-exit"
+        : "";
+
   return (
     <div
       className="pointer-events-none fixed inset-x-0 bottom-[5.5rem] z-30 mx-auto w-[min(100%-1.5rem,40rem)] lg:bottom-6"
       ref={rootRef}
     >
-      {isOpen ? (
-        <form
-          className={`ask-shell ask-shell-composer ask-bar-surface pointer-events-auto bg-white p-4 shadow-lg ${
-            closing ? "ask-bar-shrink-out" : "ask-bar-grow-in"
-          }`}
-          onSubmit={onSubmit}
-        >
-          <textarea
-            aria-label="Message"
-            className="min-h-16 w-full resize-none bg-transparent text-sm text-ink outline-none placeholder:text-muted"
-            disabled={sending}
-            onChange={(event) => setDraft(event.target.value)}
-            onKeyDown={onKeyDown}
-            placeholder={ASK_PLACEHOLDER}
-            ref={textareaRef}
-            rows={3}
-            value={draft}
-          />
-          <div className="mt-3 flex items-center justify-between">
-            <span aria-hidden className="text-muted">
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24">
-                <path
-                  d="M12 5v14M5 12h14"
-                  stroke="currentColor"
-                  strokeLinecap="round"
-                  strokeWidth="1.8"
-                />
-              </svg>
-            </span>
-            <div className="flex items-center gap-2">
+      <div
+        className={`ask-shell ask-bar-surface pointer-events-auto bg-white shadow-lg ${shellMotionClass}`}
+        data-motion={motion}
+        data-shape={shape}
+        onAnimationEnd={onShellAnimationEnd}
+        ref={shellRef}
+      >
+        {isComposer ? (
+          <form className="p-4" onSubmit={onSubmit}>
+            <textarea
+              aria-label="Message"
+              className="min-h-16 w-full resize-none bg-transparent text-sm text-ink outline-none placeholder:text-muted"
+              disabled={sending || motion === "exit"}
+              onChange={(event) => setDraft(event.target.value)}
+              onKeyDown={onKeyDown}
+              placeholder={ASK_PLACEHOLDER}
+              ref={textareaRef}
+              rows={3}
+              value={draft}
+            />
+            <div className="mt-3 flex items-center justify-between">
               <span aria-hidden className="text-muted">
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24">
                   <path
-                    d="M12 14a3 3 0 0 0 3-3V7a3 3 0 1 0-6 0v4a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0M12 18v3"
+                    d="M12 5v14M5 12h14"
                     stroke="currentColor"
                     strokeLinecap="round"
                     strokeWidth="1.8"
                   />
                 </svg>
               </span>
-              <button
-                aria-label="Send message"
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-[#6b7280] text-white disabled:opacity-50"
-                disabled={sending || !draft.trim()}
-                type="submit"
-              >
-                <svg aria-hidden className="h-5 w-5" fill="none" viewBox="0 0 24 24">
-                  <path
-                    d="M12 19V5M5 12l7-7 7 7"
-                    stroke="currentColor"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="1.8"
-                  />
-                </svg>
-              </button>
+              <div className="flex items-center gap-2">
+                <span aria-hidden className="text-muted">
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+                    <path
+                      d="M12 14a3 3 0 0 0 3-3V7a3 3 0 1 0-6 0v4a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0M12 18v3"
+                      stroke="currentColor"
+                      strokeLinecap="round"
+                      strokeWidth="1.8"
+                    />
+                  </svg>
+                </span>
+                <button
+                  aria-label="Send message"
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-[#6b7280] text-white disabled:opacity-50"
+                  disabled={sending || !draft.trim() || motion === "exit"}
+                  type="submit"
+                >
+                  <svg aria-hidden className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+                    <path
+                      d="M12 19V5M5 12l7-7 7 7"
+                      stroke="currentColor"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="1.8"
+                    />
+                  </svg>
+                </button>
+              </div>
             </div>
-          </div>
-        </form>
-      ) : (
-        <button
-          aria-expanded={false}
-          aria-label="Open ask bar"
-          className="ask-shell ask-shell-pill ask-bar-surface ask-bar-grow-in pointer-events-auto flex w-full items-center gap-3 bg-white px-5 py-3.5 text-left shadow-lg"
-          onClick={open}
-          type="button"
-        >
-          <SparklesIcon />
-          <span className="truncate text-sm text-muted">{ASK_PLACEHOLDER}</span>
-        </button>
-      )}
+          </form>
+        ) : (
+          <button
+            aria-expanded={isOpen}
+            aria-label="Open ask bar"
+            className="flex w-full items-center gap-3 px-5 py-3.5 text-left"
+            onClick={open}
+            type="button"
+          >
+            <SparklesIcon />
+            <span className="truncate text-sm text-muted">{ASK_PLACEHOLDER}</span>
+          </button>
+        )}
+      </div>
     </div>
   );
 }
