@@ -441,3 +441,20 @@ main > section:last-of-type .btn-primary:hover:not(:disabled) {
   transform: translateY(-1px);
   filter: brightness(1.05);
 }
+
+.ask-shell {
+  position: relative;
+  background:
+    linear-gradient(#fff, #fff) padding-box,
+    linear-gradient(90deg, #f59e0b 0%, #ec4899 50%, #6366f1 100%) border-box;
+  border: 1.5px solid transparent;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+}
+
+.ask-shell-pill {
+  border-radius: 9999px;
+}
+
+.ask-shell-composer {
+  border-radius: 1.25rem;
+}
