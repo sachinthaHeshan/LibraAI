@@ -144,10 +144,10 @@ export function ChatWidget(): JSX.Element {
           </div>
 
           <form className="border-t border-line p-3" onSubmit={onSubmit}>
-            <div className="flex items-end gap-2">
+            <div className="ask-shell ask-shell-composer bg-white p-3 shadow-lg">
               <textarea
                 aria-label="Message"
-                className="field field-box min-h-11 flex-1 resize-none py-2.5"
+                className="min-h-11 w-full resize-none bg-transparent text-sm text-ink outline-none placeholder:text-muted"
                 disabled={sending}
                 onChange={(event) => setDraft(event.target.value)}
                 onKeyDown={onKeyDown}
@@ -156,13 +156,46 @@ export function ChatWidget(): JSX.Element {
                 ref={textareaRef}
                 value={draft}
               />
-              <button
-                className="btn-primary shrink-0 px-3 py-2 text-sm"
-                disabled={sending || !draft.trim()}
-                type="submit"
-              >
-                Send
-              </button>
+              <div className="mt-2 flex items-center justify-between">
+                <span aria-hidden className="text-muted">
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+                    <path
+                      d="M12 5v14M5 12h14"
+                      stroke="currentColor"
+                      strokeLinecap="round"
+                      strokeWidth="1.8"
+                    />
+                  </svg>
+                </span>
+                <div className="flex items-center gap-2">
+                  <span aria-hidden className="text-muted">
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+                      <path
+                        d="M12 14a3 3 0 0 0 3-3V7a3 3 0 1 0-6 0v4a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0M12 18v3"
+                        stroke="currentColor"
+                        strokeLinecap="round"
+                        strokeWidth="1.8"
+                      />
+                    </svg>
+                  </span>
+                  <button
+                    aria-label="Send message"
+                    className="flex h-9 w-9 items-center justify-center rounded-full bg-[#6b7280] text-white disabled:opacity-50"
+                    disabled={sending || !draft.trim()}
+                    type="submit"
+                  >
+                    <svg aria-hidden className="h-4 w-4" fill="none" viewBox="0 0 24 24">
+                      <path
+                        d="M12 19V5M5 12l7-7 7 7"
+                        stroke="currentColor"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="1.8"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </div>
             </div>
           </form>
         </section>
