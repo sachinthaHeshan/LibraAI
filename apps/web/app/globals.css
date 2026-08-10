@@ -70,7 +70,7 @@ body {
   .field {
     width: 100%;
     border-radius: 999px;
-    border: 1px solid transparent;
+    border: 1px solid #d5dbe6;
     background: #f3f4f6;
     padding: 0.7rem 1rem;
     color: var(--ink);
@@ -86,10 +86,32 @@ body {
     background: #eef0f4;
   }
 
-  .field:focus {
+  .field:focus,
+  .field:focus-within {
     background: white;
     border-color: color-mix(in oklab, var(--accent) 35%, white);
     box-shadow: 0 0 0 4px var(--accent-soft);
+  }
+
+  /* Icon + input in normal flow — avoids absolute icon / placeholder overlap. */
+  .field-with-icon {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+  }
+
+  .field-with-icon > input {
+    min-width: 0;
+    flex: 1;
+    border: 0;
+    background: transparent;
+    padding: 0;
+    color: inherit;
+    outline: none;
+  }
+
+  .field-with-icon > input::placeholder {
+    color: var(--muted);
   }
 }
 
