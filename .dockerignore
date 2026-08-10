@@ -9,9 +9,9 @@
 **/coverage
 **/*.tsbuildinfo
 
-.env
-.env.*
-!.env.example
+**/.env
+**/.env.*
+!**/.env.example
 
 docs
 agent-transcripts
