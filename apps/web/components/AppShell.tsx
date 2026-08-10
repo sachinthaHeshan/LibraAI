@@ -104,7 +104,6 @@ type AppShellProps = {
   title: string;
   subtitle?: string;
   actions?: ReactNode;
-  search?: ReactNode;
   aside?: ReactNode;
 };
 
@@ -113,7 +112,6 @@ export function AppShell({
   title,
   subtitle,
   actions,
-  search,
   aside,
 }: AppShellProps) {
   const pathname = usePathname();
@@ -195,37 +193,10 @@ export function AppShell({
 
       <div className="min-w-0">
         <header className="sticky top-0 z-30 border-b border-line bg-white/90 px-4 py-3 backdrop-blur sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between gap-3">
             <Logo className="lg:hidden" href="/overview" size="sm" />
 
-            <div className="mx-auto w-full max-w-xl">
-              {search ?? (
-                <div className="relative">
-                  <span className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-muted">
-                    <svg
-                      aria-hidden
-                      className="h-4 w-4 shrink-0"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeLinecap="round"
-                      strokeWidth="1.75"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle cx="11" cy="11" r="6.5" />
-                      <path d="m16 16 3.5 3.5" />
-                    </svg>
-                  </span>
-                  <input
-                    aria-label="Search"
-                    className="field pl-11"
-                    placeholder="Search or type a command"
-                    readOnly
-                  />
-                </div>
-              )}
-            </div>
-
-            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+            <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
               <button aria-label="Settings" className="btn-icon" type="button">
                 <svg
                   aria-hidden

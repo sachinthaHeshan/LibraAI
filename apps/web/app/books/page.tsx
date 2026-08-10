@@ -105,41 +105,40 @@ export default function BooksPage() {
           Add book
         </button>
       }
-      search={
-        <form className="relative max-w-md" onSubmit={handleSearch}>
-          <span className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-muted">
-            <svg aria-hidden className="h-4 w-4" fill="none" viewBox="0 0 24 24">
-              <circle cx="11" cy="11" r="6.5" stroke="currentColor" strokeWidth="1.6" />
-              <path
-                d="m16 16 3.5 3.5"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeWidth="1.6"
-              />
-            </svg>
-          </span>
-          <input
-            aria-label="Search books"
-            className="field pl-11"
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search title, author, or ISBN"
-            value={query}
-          />
-          {query ? (
-            <button
-              aria-label="Clear search"
-              className="absolute inset-y-0 right-2 my-auto flex h-8 w-8 items-center justify-center rounded-lg text-muted hover:bg-white"
-              onClick={() => setQuery("")}
-              type="button"
-            >
-              ×
-            </button>
-          ) : null}
-        </form>
-      }
       subtitle="Catalogue"
       title="Books"
     >
+      <form className="relative mb-5 max-w-md" onSubmit={handleSearch}>
+        <span className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-muted">
+          <svg aria-hidden className="h-4 w-4" fill="none" viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="6.5" stroke="currentColor" strokeWidth="1.6" />
+            <path
+              d="m16 16 3.5 3.5"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeWidth="1.6"
+            />
+          </svg>
+        </span>
+        <input
+          aria-label="Search books"
+          className="field pl-11"
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Search title, author, or ISBN"
+          value={query}
+        />
+        {query ? (
+          <button
+            aria-label="Clear search"
+            className="absolute inset-y-0 right-2 my-auto flex h-8 w-8 items-center justify-center rounded-lg text-muted hover:bg-white"
+            onClick={() => setQuery("")}
+            type="button"
+          >
+            ×
+          </button>
+        ) : null}
+      </form>
+
       <div className="mb-5 grid gap-4 sm:grid-cols-3">
         <StatCard hint="In catalogue" label="Titles" value={books.length} />
         <StatCard hint="Ready to borrow" label="Available copies" value={available} />

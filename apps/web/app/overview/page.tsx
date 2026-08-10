@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 
 import { AppShell } from "@/components/AppShell";
 import { OverviewAskBar } from "@/components/OverviewAskBar";
@@ -42,22 +42,39 @@ type ActivityLoan = {
   issuedAt: string;
 };
 
+type RingGradient = {
+  from: string;
+  mid: string;
+  to: string;
+};
+
 function Ring({
   value,
-  label,
-  tone,
-  compare,
+  display,
+  caption,
+  subcaption,
+  gradient,
   empty = false,
   delayMs = 0,
 }: {
   value: number;
-  label: string;
-  tone: string;
-  compare: string;
+  display: string;
+  caption: string;
+  subcaption: string;
+  gradient: RingGradient;
   empty?: boolean;
   delayMs?: number;
 }) {
+  const reactId = useId();
+  const gradId = `ring-grad-${reactId.replace(/:/g, "")}`;
   const [progress, setProgress] = useState(0);
+
+  const size = 168;
+  const stroke = 12;
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const clamped = Math.min(100, Math.max(0, progress));
+  const dashOffset = circumference - (clamped / 100) * circumference;
 
   useEffect(() => {
     const target = empty ? 0 : value;
@@ -81,23 +98,62 @@ function Ring({
   }, [value, empty, delayMs]);
 
   return (
-    <div className="card ring-card flex flex-col items-center px-5 py-6 text-center">
-      <p className="mb-4 w-full text-left text-sm font-semibold text-ink">{label}</p>
-      <div
-        className="ring"
-        style={{
-          ["--value" as string]: progress,
-          ["--tone" as string]: empty ? "#eef0f4" : tone,
-        }}
-      >
-        <span className="text-2xl font-bold tabular-nums tracking-tight text-ink">
-          {empty ? "—" : `${value}%`}
-        </span>
+    <div
+      aria-label={`${caption}: ${empty ? "no data" : display}. ${subcaption}`}
+      className="card ring-card flex flex-col items-center px-5 py-7 text-center"
+    >
+      <div className="ring-gauge">
+        <svg
+          aria-hidden
+          className="ring-gauge-svg"
+          height={size}
+          viewBox={`0 0 ${size} ${size}`}
+          width={size}
+        >
+          <defs>
+            <linearGradient id={gradId} x1="0%" x2="100%" y1="0%" y2="100%">
+              <stop offset="0%" stopColor={gradient.from} />
+              <stop offset="48%" stopColor={gradient.mid} />
+              <stop offset="100%" stopColor={gradient.to} />
+            </linearGradient>
+          </defs>
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            fill="none"
+            r={radius}
+            stroke="#eef0f4"
+            strokeWidth={stroke}
+          />
+          <circle
+            className="ring-gauge-progress"
+            cx={size / 2}
+            cy={size / 2}
+            fill="none"
+            r={radius}
+            stroke={empty ? "#e5e7eb" : `url(#${gradId})`}
+            strokeDasharray={circumference}
+            strokeDashoffset={dashOffset}
+            strokeLinecap="round"
+            strokeWidth={stroke}
+            transform={`rotate(-90 ${size / 2} ${size / 2})`}
+          />
+        </svg>
+        <div className="ring-gauge-center">
+          <p className="ring-gauge-value">{empty ? "—" : display}</p>
+          <p className="ring-gauge-caption">{caption}</p>
+          <p className="ring-gauge-subcaption">{subcaption}</p>
+        </div>
       </div>
-      <p className="mt-4 text-xs font-medium text-muted">{compare}</p>
     </div>
   );
 }
+
+const RING_GRADIENTS = {
+  availability: { from: "#8b5cf6", mid: "#2f6bff", to: "#22d3ee" },
+  members: { from: "#34d399", mid: "#22c55e", to: "#2dd4bf" },
+  onTime: { from: "#fbbf24", mid: "#f59e0b", to: "#fb923c" },
+} as const satisfies Record<string, RingGradient>;
 
 function ActivityChart({ points, labels }: { points: number[]; labels: string[] }) {
   const width = 640;
@@ -295,39 +351,40 @@ export default function OverviewPage() {
           <>
             <div className="mb-5 grid gap-4 md:grid-cols-3">
             <Ring
-              compare={
-                totalCopies === 0
-                  ? "No copies yet"
-                  : `${availableCopies} of ${totalCopies} copies free`
-              }
+              caption="Copies free"
               delayMs={0}
+              display={String(availableCopies)}
               empty={totalCopies === 0}
-              label="Availability"
-              tone="#2f6bff"
+              gradient={RING_GRADIENTS.availability}
+              subcaption={
+                totalCopies === 0 ? "No copies yet" : `Of ${totalCopies} total`
+              }
               value={availabilityPct}
             />
             <Ring
-              compare={
+              caption="Active members"
+              delayMs={80}
+              display={String(activeMembers)}
+              empty={members.length === 0}
+              gradient={RING_GRADIENTS.members}
+              subcaption={
                 members.length === 0
                   ? "No members yet"
-                  : `${activeMembers} active members`
+                  : `${activeMemberPct}% of roster`
               }
-              delayMs={80}
-              empty={members.length === 0}
-              label="Active members"
-              tone="#22c55e"
               value={activeMemberPct}
             />
             <Ring
-              compare={
+              caption="On-time loans"
+              delayMs={160}
+              display={String(Math.max(0, loans.length - overdue))}
+              empty={loans.length === 0}
+              gradient={RING_GRADIENTS.onTime}
+              subcaption={
                 loans.length === 0
                   ? "No active loans"
-                  : `${overdue} overdue right now`
+                  : `${overdue} overdue now`
               }
-              delayMs={160}
-              empty={loans.length === 0}
-              label="On-time loans"
-              tone="#f59e0b"
               value={onTimePct}
             />
           </div>

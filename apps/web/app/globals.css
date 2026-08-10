@@ -238,26 +238,6 @@ body {
   }
 }
 
-@property --value {
-  syntax: "<number>";
-  inherits: true;
-  initial-value: 0;
-}
-
-.ring {
-  --value: 0;
-  --tone: var(--accent);
-  width: 8.5rem;
-  height: 8.5rem;
-  border-radius: 999px;
-  display: grid;
-  place-items: center;
-  background:
-    radial-gradient(closest-side, white 78%, transparent 79% 100%),
-    conic-gradient(var(--tone) calc(var(--value) * 1%), #eef0f4 0);
-  transition: --value 0.6s ease-out;
-}
-
 .ring-card {
   transition:
     transform 0.2s ease,
@@ -269,8 +249,63 @@ body {
   box-shadow: 0 12px 28px rgba(15, 23, 42, 0.07);
 }
 
+.ring-gauge {
+  position: relative;
+  width: 10.5rem;
+  height: 10.5rem;
+}
+
+.ring-gauge-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.ring-gauge-progress {
+  transition: stroke-dashoffset 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ring-gauge-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  pointer-events: none;
+}
+
+.ring-gauge-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: #1f2937;
+  font-variant-numeric: tabular-nums;
+}
+
+.ring-gauge-caption,
+.ring-gauge-subcaption {
+  margin-top: 0.35rem;
+  max-width: 6.5rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  line-height: 1.25;
+  text-transform: uppercase;
+  color: #9ca3af;
+}
+
+.ring-gauge-subcaption {
+  margin-top: 0.15rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: #c4c9d2;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .ring {
+  .ring-gauge-progress {
     transition: none;
   }
 
