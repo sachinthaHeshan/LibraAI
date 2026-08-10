@@ -2,6 +2,8 @@
 
 import { type FormEvent, useState } from "react";
 
+import { YearSelect } from "@/components/YearSelect";
+
 export type BookInput = {
   title: string;
   author: string;
@@ -99,12 +101,9 @@ export function BookForm({
         </label>
         <label className="block text-sm font-semibold text-ink">
           Published year
-          <input
-            className="field field-box mt-1.5"
-            max="9999"
-            min="1"
-            onChange={(event) => setPublishedYear(event.target.value)}
-            type="number"
+          <YearSelect
+            includeYear={initialValues?.publishedYear}
+            onChange={setPublishedYear}
             value={publishedYear}
           />
         </label>
