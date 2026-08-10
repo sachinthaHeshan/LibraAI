@@ -1,12 +1,5 @@
-export type RuntimeEnv = {
-  NEXT_PUBLIC_API_URL?: string;
-};
-
-declare global {
-  interface Window {
-    __ENV__?: RuntimeEnv;
-  }
-}
+/** Same-origin Next.js proxy prefix (see `app/backend/[...path]/route.ts`). */
+export const API_PROXY_PREFIX = "/backend";
 
 /** Strip trailing slash so `${base}/auth/login` stays valid. */
 export function normalizeApiBaseUrl(url: string): string {
@@ -14,24 +7,18 @@ export function normalizeApiBaseUrl(url: string): string {
 }
 
 /**
- * Read API base URL without Next inlining `process.env.NEXT_PUBLIC_*` at build.
- * Prefer Dokploy/runtime `API_URL`, then `NEXT_PUBLIC_API_URL`.
+ * Upstream API origin for the server-side proxy.
+ * Pass `process.env` from a Server Component / Route Handler only.
  */
 export function readServerApiBaseUrl(
-  env: NodeJS.ProcessEnv = process.env,
+  source: Record<string, string | undefined>,
 ): string {
-  const record = env as Record<string, string | undefined>;
-  return normalizeApiBaseUrl(record.API_URL || record.NEXT_PUBLIC_API_URL || "");
+  return normalizeApiBaseUrl(
+    source.API_URL || source.NEXT_PUBLIC_API_URL || "",
+  );
 }
 
-/** Client: runtime inject from layout, then build-time NEXT_PUBLIC fallback. */
+/** Browser always calls the same-origin proxy; CORS is not required. */
 export function getApiBaseUrl(): string {
-  if (typeof window !== "undefined") {
-    const runtime = window.__ENV__?.NEXT_PUBLIC_API_URL;
-    if (runtime) {
-      return normalizeApiBaseUrl(runtime);
-    }
-  }
-
-  return normalizeApiBaseUrl(process.env.NEXT_PUBLIC_API_URL ?? "");
+  return API_PROXY_PREFIX;
 }

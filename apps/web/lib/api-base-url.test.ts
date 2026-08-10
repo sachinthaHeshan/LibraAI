@@ -1,6 +1,7 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import {
+  API_PROXY_PREFIX,
   getApiBaseUrl,
   normalizeApiBaseUrl,
   readServerApiBaseUrl,
@@ -34,24 +35,8 @@ describe("readServerApiBaseUrl", () => {
 });
 
 describe("getApiBaseUrl", () => {
-  afterEach(() => {
-    vi.unstubAllGlobals();
-    delete process.env.NEXT_PUBLIC_API_URL;
-  });
-
-  it("uses window.__ENV__ when present", () => {
-    vi.stubGlobal("window", {
-      __ENV__: { NEXT_PUBLIC_API_URL: "https://libraai-api.orionlabs.lk/" },
-    });
-    process.env.NEXT_PUBLIC_API_URL = "http://localhost:3001";
-
-    expect(getApiBaseUrl()).toBe("https://libraai-api.orionlabs.lk");
-  });
-
-  it("falls back to process.env when window.__ENV__ is missing", () => {
-    vi.stubGlobal("window", {});
-    process.env.NEXT_PUBLIC_API_URL = "http://localhost:3001";
-
-    expect(getApiBaseUrl()).toBe("http://localhost:3001");
+  it("always uses the same-origin proxy prefix", () => {
+    expect(getApiBaseUrl()).toBe(API_PROXY_PREFIX);
+    expect(getApiBaseUrl()).toBe("/backend");
   });
 });

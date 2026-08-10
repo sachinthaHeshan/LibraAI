@@ -73,22 +73,24 @@ Environment variables:
 | Dockerfile | `Dockerfile.web` |
 | Port | `3450` |
 
-**Runtime** environment (Dokploy Environment — not only a build arg):
+**Runtime** environment on the web app (Dokploy Environment):
 
 | Variable | Required | Example |
 |----------|----------|---------|
-| `NEXT_PUBLIC_API_URL` | yes | `https://your-api-domain` |
+| `API_URL` | yes | `https://libraai-api.orionlabs.lk` |
 
-`API_URL` is also accepted as an alias. The web server injects this into the page at runtime, so you can change it and **restart** the web container (full rebuild not required for URL changes).
+`NEXT_PUBLIC_API_URL` is accepted as a fallback. The browser calls same-origin `/backend/...`; the Next server proxies to `API_URL`. Prefer `API_URL` (not only a build arg).
 
-Also set API `CORS_ORIGIN` to your web origin (e.g. `https://libraai.orionlabs.lk`).
+After setting env, **redeploy/restart** the web container.
+
+API `CORS_ORIGIN` can stay your web origin; browser traffic goes through the proxy so CORS is not required for login from the UI.
 
 ### 4. Local image smoke tests
 
 ```bash
 docker build -f Dockerfile.api -t libra-api:local .
 docker build -f Dockerfile.web -t libra-web:local .
-docker run --rm -e NEXT_PUBLIC_API_URL=http://localhost:3451 -p 3450:3450 libra-web:local
+docker run --rm -e API_URL=http://host.docker.internal:3001 -p 3450:3450 libra-web:local
 ```
 
 ## Available commands

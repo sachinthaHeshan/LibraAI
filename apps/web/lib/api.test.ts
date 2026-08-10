@@ -80,7 +80,7 @@ describe("apiFetch", () => {
     });
 
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe("http://localhost:3001/books");
+    expect(url).toBe("/backend/books");
     expect(new Headers(init.headers).get("Authorization")).toBe(
       "Bearer signed-token",
     );
