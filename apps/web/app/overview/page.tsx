@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { AppShell } from "@/components/AppShell";
 import { apiFetch } from "@/lib/api";
+import { lendingActivitySeries } from "@/lib/lending-activity";
 
 type Book = {
   id: string;
@@ -25,8 +26,13 @@ type Loan = {
   id: string;
   dueDate: string;
   overdue: boolean;
+  issuedAt: string;
   book: { title: string };
   member: { name: string };
+};
+
+type ActivityLoan = {
+  issuedAt: string;
 };
 
 function Ring({
@@ -51,7 +57,7 @@ function Ring({
   );
 }
 
-function ActivityChart({ points }: { points: number[] }) {
+function ActivityChart({ points, labels }: { points: number[]; labels: string[] }) {
   const width = 640;
   const height = 220;
   const padX = 24;
@@ -65,7 +71,6 @@ function ActivityChart({ points }: { points: number[] }) {
   });
 
   const line = coords.map((c, i) => `${i === 0 ? "M" : "L"} ${c.x} ${c.y}`).join(" ");
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
   return (
     <div className="overflow-x-auto">
@@ -93,16 +98,16 @@ function ActivityChart({ points }: { points: number[] }) {
         {coords.map((c, index) => (
           <circle cx={c.x} cy={c.y} fill="#2f6bff" key={index} r="3.5" />
         ))}
-        {months.slice(0, points.length).map((month, index) => (
+        {labels.map((label, index) => (
           <text
             fill="#9ca3af"
             fontSize="11"
-            key={month}
+            key={`${label}-${index}`}
             textAnchor="middle"
             x={coords[index]?.x}
             y={height + 18}
           >
-            {month}
+            {label}
           </text>
         ))}
       </svg>
@@ -114,23 +119,27 @@ export default function OverviewPage() {
   const [books, setBooks] = useState<Book[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [loans, setLoans] = useState<Loan[]>([]);
+  const [activityLoans, setActivityLoans] = useState<ActivityLoan[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [nextBooks, nextMembers, nextLoans] = await Promise.all([
+      const [nextBooks, nextMembers, nextLoans, nextActivityLoans] = await Promise.all([
         apiFetch<Book[]>("/books"),
         apiFetch<Member[]>("/members"),
         apiFetch<Loan[]>("/loans?status=borrowed"),
+        apiFetch<ActivityLoan[]>("/loans"),
       ]);
       setBooks(nextBooks);
       setMembers(nextMembers);
       setLoans(nextLoans);
+      setActivityLoans(nextActivityLoans);
     } catch {
       setBooks([]);
       setMembers([]);
       setLoans([]);
+      setActivityLoans([]);
     } finally {
       setLoading(false);
     }
@@ -153,12 +162,7 @@ export default function OverviewPage() {
   const onTimePct =
     loans.length > 0 ? Math.round(((loans.length - overdue) / loans.length) * 100) : 100;
 
-  const chartPoints = useMemo(() => {
-    const base = Math.max(loans.length, 1);
-    return [2, 3, 4, 5, 6, 7, 8, 9, 8, 7, 6, 5].map((n, index) =>
-      Math.max(0, Math.round((base * n) / 6 + (index % 3))),
-    );
-  }, [loans.length]);
+  const activity = useMemo(() => lendingActivitySeries(activityLoans), [activityLoans]);
 
   const lowStock = books
     .filter((book) => book.availableCopies === 0 || book.availableCopies / book.totalCopies <= 0.25)
@@ -224,7 +228,7 @@ export default function OverviewPage() {
           </div>
         </div>
       }
-      subtitle="This year"
+      subtitle="Last 12 months"
       title="Overview"
     >
       {loading ? (
@@ -262,7 +266,7 @@ export default function OverviewPage() {
               <div className="flex items-center gap-4 text-xs font-medium text-muted">
                 <span className="inline-flex items-center gap-1.5">
                   <span className="dot dot-ok" style={{ background: "#2f6bff" }} />
-                  Active loans trend
+                  Loans issued
                 </span>
                 <span className="inline-flex items-center gap-1.5">
                   <span className="h-2 w-2 rounded-full bg-[#22c55e]" />
@@ -270,7 +274,7 @@ export default function OverviewPage() {
                 </span>
               </div>
             </div>
-            <ActivityChart points={chartPoints} />
+            <ActivityChart labels={activity.labels} points={activity.points} />
           </section>
 
           <section className="card overflow-hidden">
