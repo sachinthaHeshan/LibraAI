@@ -1,3 +1,5 @@
+import { LandingAurora } from "@/components/landing/LandingAurora";
+
 const PROMPTS = [
   "Add Atomic Habits by James Clear to the catalogue",
   "Register a new member named Nimal Perera",
@@ -6,8 +8,9 @@ const PROMPTS = [
 
 export function LandingAi() {
   return (
-    <section className="border-t border-line bg-white" id="ai">
-      <div className="mx-auto max-w-6xl px-5 py-16 sm:px-8 sm:py-24">
+    <section className="relative overflow-hidden border-t border-line bg-white" id="ai">
+      <LandingAurora variant="section" />
+      <div className="relative z-10 mx-auto max-w-6xl px-5 py-16 sm:px-8 sm:py-24">
         <h2 className="text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">
           Do everything with AI
         </h2>
