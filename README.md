@@ -30,6 +30,64 @@ just seed
 
 Change `JWT_SECRET` in `.env` for non-development use.
 
+## Dokploy deploy
+
+Deploy the API and web app as **two separate Dokploy applications** from this repo. Use a separate Dokploy Postgres (or any external Postgres) — it is not included in either image.
+
+### 1. Database
+
+Create a Postgres instance in Dokploy and copy the connection string as `DATABASE_URL`.
+
+Run migrations manually against that database (from a machine with repo access):
+
+```bash
+export DATABASE_URL='postgresql://...'
+pnpm install
+pnpm db:migrate
+pnpm db:seed   # optional: create admin user
+```
+
+### 2. API application
+
+| Setting | Value |
+|---------|-------|
+| Build context | Repository root (`.`) |
+| Dockerfile | `Dockerfile.api` |
+| Port | `3001` |
+
+Environment variables:
+
+| Variable | Required | Example |
+|----------|----------|---------|
+| `DATABASE_URL` | yes | Dokploy Postgres URL |
+| `JWT_SECRET` | yes | long random string |
+| `CORS_ORIGIN` | yes | `https://your-web-domain` |
+| `PORT` | no | `3001` |
+| `NODE_ENV` | no | `production` |
+
+### 3. Web application
+
+| Setting | Value |
+|---------|-------|
+| Build context | Repository root (`.`) |
+| Dockerfile | `Dockerfile.web` |
+| Port | `3000` |
+
+Build-time argument / env (must be available during `docker build`):
+
+| Variable | Required | Example |
+|----------|----------|---------|
+| `NEXT_PUBLIC_API_URL` | yes | `https://your-api-domain` |
+
+After changing the API public URL, **rebuild** the web image so the client bundle picks up the new value.
+
+### 4. Local image smoke tests
+
+```bash
+docker build -f Dockerfile.api -t libra-api:local .
+docker build -f Dockerfile.web --build-arg NEXT_PUBLIC_API_URL=http://localhost:3001 -t libra-web:local .
+```
+
 ## Available commands
 
 | Command | Description |
