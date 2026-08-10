@@ -47,17 +47,52 @@ function Ring({
   label,
   tone,
   compare,
+  empty = false,
+  delayMs = 0,
 }: {
   value: number;
   label: string;
   tone: string;
   compare: string;
+  empty?: boolean;
+  delayMs?: number;
 }) {
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    const target = empty ? 0 : value;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (reduced) {
+      setProgress(target);
+      return;
+    }
+
+    setProgress(0);
+    let timer = 0;
+    const frame = window.requestAnimationFrame(() => {
+      timer = window.setTimeout(() => setProgress(target), delayMs);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(timer);
+    };
+  }, [value, empty, delayMs]);
+
   return (
-    <div className="card flex flex-col items-center px-5 py-6 text-center">
+    <div className="card ring-card flex flex-col items-center px-5 py-6 text-center">
       <p className="mb-4 w-full text-left text-sm font-semibold text-ink">{label}</p>
-      <div className="ring" style={{ ["--value" as string]: value, ["--tone" as string]: tone }}>
-        <span className="text-2xl font-bold text-ink">{value}%</span>
+      <div
+        className="ring"
+        style={{
+          ["--value" as string]: progress,
+          ["--tone" as string]: empty ? "#eef0f4" : tone,
+        }}
+      >
+        <span className="text-2xl font-bold tabular-nums tracking-tight text-ink">
+          {empty ? "—" : `${value}%`}
+        </span>
       </div>
       <p className="mt-4 text-xs font-medium text-muted">{compare}</p>
     </div>
@@ -260,19 +295,37 @@ export default function OverviewPage() {
           <>
             <div className="mb-5 grid gap-4 md:grid-cols-3">
             <Ring
-              compare={`${availableCopies} of ${totalCopies || 0} copies free`}
+              compare={
+                totalCopies === 0
+                  ? "No copies yet"
+                  : `${availableCopies} of ${totalCopies} copies free`
+              }
+              delayMs={0}
+              empty={totalCopies === 0}
               label="Availability"
               tone="#2f6bff"
               value={availabilityPct}
             />
             <Ring
-              compare={`${activeMembers} active members`}
+              compare={
+                members.length === 0
+                  ? "No members yet"
+                  : `${activeMembers} active members`
+              }
+              delayMs={80}
+              empty={members.length === 0}
               label="Active members"
               tone="#22c55e"
               value={activeMemberPct}
             />
             <Ring
-              compare={`${overdue} overdue right now`}
+              compare={
+                loans.length === 0
+                  ? "No active loans"
+                  : `${overdue} overdue right now`
+              }
+              delayMs={160}
+              empty={loans.length === 0}
               label="On-time loans"
               tone="#f59e0b"
               value={onTimePct}

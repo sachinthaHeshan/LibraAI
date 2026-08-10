@@ -238,17 +238,47 @@ body {
   }
 }
 
+@property --value {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+
 .ring {
-  --value: 68;
+  --value: 0;
   --tone: var(--accent);
-  width: 7.5rem;
-  height: 7.5rem;
+  width: 8.5rem;
+  height: 8.5rem;
   border-radius: 999px;
   display: grid;
   place-items: center;
   background:
-    radial-gradient(closest-side, white 72%, transparent 73% 100%),
+    radial-gradient(closest-side, white 78%, transparent 79% 100%),
     conic-gradient(var(--tone) calc(var(--value) * 1%), #eef0f4 0);
+  transition: --value 0.6s ease-out;
+}
+
+.ring-card {
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.ring-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.07);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ring {
+    transition: none;
+  }
+
+  .ring-card,
+  .ring-card:hover {
+    transition: none;
+    transform: none;
+  }
 }
 
 .meter {
