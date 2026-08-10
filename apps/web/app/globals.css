@@ -364,3 +364,10 @@ body {
     animation: none;
   }
 }
+
+.landing-hero .btn-primary:hover:not(:disabled),
+#pricing .btn-primary:hover:not(:disabled),
+main > section:last-of-type .btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+}

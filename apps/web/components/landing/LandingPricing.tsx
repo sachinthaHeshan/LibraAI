@@ -17,10 +17,10 @@ export function LandingPricing() {
         <div className="mt-12 grid gap-6 lg:grid-cols-3">
           {PLANS.map((plan) => (
             <div
-              className={`flex flex-col rounded-2xl border p-6 sm:p-7 ${
+              className={`flex flex-col rounded-2xl border p-6 sm:p-7 transition-[transform,box-shadow] duration-200 ${
                 plan.highlighted
-                  ? "landing-animate border-accent bg-accent-soft/40 shadow-[0_12px_40px_rgba(47,107,255,0.12)]"
-                  : "border-line bg-canvas"
+                  ? "landing-animate border-accent bg-white shadow-[0_16px_48px_rgba(47,107,255,0.14)] sm:scale-[1.02]"
+                  : "border-line bg-canvas/80 hover:border-[#d5dbe6]"
               }`}
               key={plan.id}
             >
