@@ -71,7 +71,21 @@ const links = [
       </NavIcon>
     ),
   },
-];type AppShellProps = {
+  {
+    href: "/staff",
+    label: "Staff",
+    icon: (
+      <NavIcon>
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M19 8v6" />
+        <path d="M22 11h-6" />
+      </NavIcon>
+    ),
+  },
+];
+
+type AppShellProps = {
   children: ReactNode;
   title: string;
   subtitle?: string;
@@ -260,7 +274,7 @@ export function AppShell({
 
       <nav
         aria-label="Mobile navigation"
-        className="fixed inset-x-3 bottom-3 z-40 grid grid-cols-4 gap-1 rounded-2xl border border-line bg-white/95 p-1.5 shadow-lg backdrop-blur lg:hidden"
+        className="fixed inset-x-3 bottom-3 z-40 grid grid-cols-5 gap-1 rounded-2xl border border-line bg-white/95 p-1.5 shadow-lg backdrop-blur lg:hidden"
       >
         {links.map((link) => {
           const active = pathname.startsWith(link.href);
