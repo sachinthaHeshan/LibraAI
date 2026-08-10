@@ -270,6 +270,8 @@ body {
 }
 
 .landing-hero {
+  position: relative;
+  overflow: hidden;
   background:
     radial-gradient(ellipse 80% 60% at 20% -10%, #dce8f8 0%, transparent 55%),
     radial-gradient(ellipse 60% 50% at 90% 10%, #eaf0ff 0%, transparent 50%),
@@ -290,4 +292,75 @@ body {
 
 .landing-animate-delay-3 {
   animation-delay: 0.24s;
+}
+
+.landing-aurora {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.landing-aurora-blob,
+.landing-aurora-blob-a,
+.landing-aurora-blob-b,
+.landing-aurora-blob-c {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(48px);
+  opacity: 0.55;
+  will-change: transform;
+  animation: landing-aurora-drift 28s ease-in-out infinite alternate;
+}
+
+.landing-aurora-blob-a {
+  top: -12%;
+  left: -8%;
+  width: min(52vw, 28rem);
+  height: min(42vw, 22rem);
+  background: #b8d0f5;
+  animation-duration: 32s;
+}
+
+.landing-aurora-blob-b {
+  top: 8%;
+  right: -10%;
+  width: min(48vw, 26rem);
+  height: min(40vw, 20rem);
+  background: #c9d8ff;
+  animation-duration: 36s;
+  animation-delay: -8s;
+}
+
+.landing-aurora-blob-c {
+  bottom: -18%;
+  left: 28%;
+  width: min(56vw, 30rem);
+  height: min(36vw, 18rem);
+  background: #dce8f8;
+  animation-duration: 40s;
+  animation-delay: -16s;
+}
+
+@keyframes landing-aurora-drift {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(3%, -4%, 0) scale(1.06);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-aurora-blob,
+  .landing-aurora-blob-a,
+  .landing-aurora-blob-b,
+  .landing-aurora-blob-c {
+    animation: none;
+  }
+
+  .landing-animate {
+    animation: none;
+  }
 }
