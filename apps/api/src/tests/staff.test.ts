@@ -1,5 +1,6 @@
 import { admins, createDb, organizations } from "@libra/db";
 import bcrypt from "bcryptjs";
+import { count, eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { buildApp } from "../create-app.js";
 import { env } from "../env.js";
@@ -184,6 +185,62 @@ describe("staff routes", () => {
     expect(response.json()).toEqual({
       message: "Cannot delete the last admin",
     });
+  });
+
+  it("keeps at least one admin when two deletes race on a two-admin org", async () => {
+    const db = createDb(env.DATABASE_URL);
+    const suffix = `${Date.now()}-${Math.random()}`;
+    const [raceOrg] = await db
+      .insert(organizations)
+      .values({ name: `Staff race ${suffix}`, plan: "starter" })
+      .returning();
+
+    const passwordHash = await bcrypt.hash("racepass1", 12);
+    const [adminA] = await db
+      .insert(admins)
+      .values({
+        firstName: "Race",
+        lastName: "A",
+        email: `race-a-${suffix}@libra.local`,
+        passwordHash,
+        organizationId: raceOrg.id,
+      })
+      .returning();
+    const [adminB] = await db
+      .insert(admins)
+      .values({
+        firstName: "Race",
+        lastName: "B",
+        email: `race-b-${suffix}@libra.local`,
+        passwordHash,
+        organizationId: raceOrg.id,
+      })
+      .returning();
+
+    const raceToken = app.jwt.sign({
+      sub: crypto.randomUUID(),
+      orgId: raceOrg.id,
+      email: "race-actor@libra.local",
+    });
+    const auth = { authorization: `Bearer ${raceToken}` };
+
+    const [first, second] = await Promise.all([
+      app.inject({ method: "DELETE", url: `/staff/${adminA.id}`, headers: auth }),
+      app.inject({ method: "DELETE", url: `/staff/${adminB.id}`, headers: auth }),
+    ]);
+
+    const statuses = [first.statusCode, second.statusCode].sort(
+      (a, b) => a - b,
+    );
+    expect(statuses).toEqual([204, 400]);
+    const failed = first.statusCode === 400 ? first : second;
+    expect(failed.json()).toEqual({ message: "Cannot delete the last admin" });
+
+    const [{ value: remaining }] = await db
+      .select({ value: count() })
+      .from(admins)
+      .where(eq(admins.organizationId, raceOrg.id));
+    expect(remaining).toBe(1);
   });
 
   it("deletes staff and returns 404 when deleting it again", async () => {

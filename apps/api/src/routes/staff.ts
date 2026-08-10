@@ -1,6 +1,6 @@
 import { admins, type Db } from "@libra/db";
 import bcrypt from "bcryptjs";
-import { and, count, eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { AppError } from "../lib/errors.js";
@@ -116,25 +116,28 @@ export function createStaffRoutes(db: Db): FastifyPluginAsync {
         throw new AppError(400, "Cannot delete yourself");
       }
 
-      const existing = await db.query.admins.findFirst({
-        where: and(eq(admins.id, id), eq(admins.organizationId, orgId)),
+      // Serialize last-admin checks: lock org admin rows so concurrent
+      // deletes cannot both pass a count of 2 and leave the org with 0.
+      await db.transaction(async (tx) => {
+        const orgAdmins = await tx
+          .select()
+          .from(admins)
+          .where(eq(admins.organizationId, orgId))
+          .for("update");
+
+        const existing = orgAdmins.find((admin) => admin.id === id);
+        if (!existing) {
+          throw new AppError(404, "Staff not found");
+        }
+
+        if (orgAdmins.length <= 1) {
+          throw new AppError(400, "Cannot delete the last admin");
+        }
+
+        await tx
+          .delete(admins)
+          .where(and(eq(admins.id, id), eq(admins.organizationId, orgId)));
       });
-      if (!existing) {
-        throw new AppError(404, "Staff not found");
-      }
-
-      const [{ value: adminCount }] = await db
-        .select({ value: count() })
-        .from(admins)
-        .where(eq(admins.organizationId, orgId));
-
-      if (adminCount <= 1) {
-        throw new AppError(400, "Cannot delete the last admin");
-      }
-
-      await db
-        .delete(admins)
-        .where(and(eq(admins.id, id), eq(admins.organizationId, orgId)));
 
       return reply.status(204).send();
     });
