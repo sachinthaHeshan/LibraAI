@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 
+import { useChat } from "@/components/ChatProvider";
 import { ChatWidget } from "@/components/ChatWidget";
 import { Logo } from "@/components/Logo";
 import { clearToken } from "@/lib/auth";
@@ -89,8 +90,10 @@ export function AppShell({
 }: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const { reset } = useChat();
 
   function logout() {
+    reset();
     clearToken();
     router.push("/login");
   }

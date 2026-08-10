@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -22,6 +23,7 @@ type ChatContextValue = {
   sending: boolean;
   toggle: () => void;
   close: () => void;
+  reset: () => void;
   sendMessage: (content: string) => void;
 };
 
@@ -33,9 +35,19 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [sending, setSending] = useState(false);
+  const replyTimeoutRef = useRef<number | null>(null);
 
   const toggle = useCallback(() => setOpen((value) => !value), []);
   const close = useCallback(() => setOpen(false), []);
+  const reset = useCallback(() => {
+    if (replyTimeoutRef.current !== null) {
+      window.clearTimeout(replyTimeoutRef.current);
+      replyTimeoutRef.current = null;
+    }
+    setOpen(false);
+    setMessages([]);
+    setSending(false);
+  }, []);
 
   const sendMessage = useCallback(
     (content: string) => {
@@ -45,7 +57,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       setMessages((previous) => [...previous, userMessage]);
       setSending(true);
 
-      window.setTimeout(() => {
+      replyTimeoutRef.current = window.setTimeout(() => {
+        replyTimeoutRef.current = null;
         setMessages((previous) => [
           ...previous,
           createPlaceholderAssistantMessage(),
@@ -57,8 +70,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo(
-    () => ({ open, messages, sending, toggle, close, sendMessage }),
-    [open, messages, sending, toggle, close, sendMessage],
+    () => ({ open, messages, sending, toggle, close, reset, sendMessage }),
+    [open, messages, sending, toggle, close, reset, sendMessage],
   );
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;

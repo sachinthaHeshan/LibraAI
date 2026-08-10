@@ -51,10 +51,32 @@ export function ChatWidget(): JSX.Element {
   const { open, messages, sending, toggle, close, sendMessage } = useChat();
   const [draft, setDraft] = useState("");
   const listRef = useRef<HTMLDivElement>(null);
+  const launcherRef = useRef<HTMLButtonElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const wasOpenRef = useRef(false);
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
   }, [messages, sending, open]);
+
+  useEffect(() => {
+    if (open) {
+      textareaRef.current?.focus();
+
+      function onEscape(event: globalThis.KeyboardEvent) {
+        if (event.key === "Escape") close();
+      }
+
+      document.addEventListener("keydown", onEscape);
+      wasOpenRef.current = true;
+      return () => document.removeEventListener("keydown", onEscape);
+    }
+
+    if (wasOpenRef.current) {
+      launcherRef.current?.focus();
+      wasOpenRef.current = false;
+    }
+  }, [close, open]);
 
   function submit() {
     if (sending || !draft.trim()) return;
@@ -75,11 +97,12 @@ export function ChatWidget(): JSX.Element {
   }
 
   return (
-    <div className="fixed bottom-20 right-4 z-50 flex flex-col items-end gap-3 lg:bottom-6 lg:right-6">
+    <div className="fixed bottom-20 right-4 z-40 flex flex-col items-end gap-3 lg:bottom-6 lg:right-6">
       {open ? (
         <section
           aria-label="LibraAI Assistant"
           className="flex h-[min(70vh,480px)] w-[min(100vw-2rem,360px)] flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-lg"
+          id="libra-chat-panel"
         >
           <header className="flex items-center justify-between border-b border-line px-4 py-3">
             <h2 className="text-sm font-bold text-ink">LibraAI Assistant</h2>
@@ -99,7 +122,7 @@ export function ChatWidget(): JSX.Element {
             ref={listRef}
           >
             {messages.length === 0 ? (
-              <p className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-bl-md bg-canvas px-3 py-2 text-sm text-ink">
+              <p className="max-w-[85%] break-words whitespace-pre-wrap rounded-2xl rounded-bl-md bg-canvas px-3 py-2 text-sm text-ink">
                 {WELCOME_COPY}
               </p>
             ) : null}
@@ -107,8 +130,8 @@ export function ChatWidget(): JSX.Element {
               <p
                 className={
                   message.role === "user"
-                    ? "ml-auto max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-md bg-accent-soft px-3 py-2 text-sm text-ink"
-                    : "max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-bl-md bg-canvas px-3 py-2 text-sm text-ink"
+                    ? "ml-auto max-w-[85%] break-words whitespace-pre-wrap rounded-2xl rounded-br-md bg-accent-soft px-3 py-2 text-sm text-ink"
+                    : "max-w-[85%] break-words whitespace-pre-wrap rounded-2xl rounded-bl-md bg-canvas px-3 py-2 text-sm text-ink"
                 }
                 key={message.id}
               >
@@ -130,6 +153,7 @@ export function ChatWidget(): JSX.Element {
                 onKeyDown={onKeyDown}
                 placeholder="Ask LibraAI…"
                 rows={2}
+                ref={textareaRef}
                 value={draft}
               />
               <button
@@ -145,10 +169,12 @@ export function ChatWidget(): JSX.Element {
       ) : null}
 
       <button
+        aria-controls="libra-chat-panel"
         aria-expanded={open}
         aria-label={open ? "Close assistant" : "Open assistant"}
         className="flex h-14 w-14 items-center justify-center rounded-full bg-accent text-white shadow-lg transition hover:opacity-90"
         onClick={toggle}
+        ref={launcherRef}
         type="button"
       >
         {open ? <CloseIcon /> : <ChatIcon />}
