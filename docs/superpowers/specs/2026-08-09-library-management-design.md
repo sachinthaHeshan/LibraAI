@@ -46,7 +46,7 @@ LibraAI/
 
 | Field | Notes |
 |-------|--------|
-| id | UUID / serial PK |
+| id | UUID PK |
 | email | unique |
 | passwordHash | bcrypt |
 | createdAt | timestamp |
