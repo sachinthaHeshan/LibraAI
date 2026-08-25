@@ -1,0 +1,2 @@
+ALTER TABLE "members" ADD COLUMN "password_hash" text;--> statement-breakpoint
+CREATE UNIQUE INDEX "members_login_email_uidx" ON "members" USING btree ("email") WHERE "members"."password_hash" is not null;
