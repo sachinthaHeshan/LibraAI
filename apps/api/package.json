@@ -1,0 +1,40 @@
+{
+  "name": "@libra/api",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start": "tsx src/server.ts",
+    "seed-admin": "tsx src/scripts/seed-admin.ts",
+    "seed-catalog": "tsx src/scripts/seed-catalog.ts",
+    "seed-books": "tsx src/scripts/seed-best-books.ts",
+    "index-books": "tsx src/scripts/index-books.ts",
+    "mastra-studio": "mastra dev --env ../../.env",
+    "test": "vitest run",
+    "eval": "tsx src/eval/run-eval.ts",
+    "test:eval": "vitest run --config vitest.eval.config.ts"
+  },
+  "dependencies": {
+    "@fastify/cors": "^11.3.0",
+    "@fastify/jwt": "^10.2.1",
+    "@libra/db": "workspace:*",
+    "@mastra/core": "^1.67.0",
+    "@mastra/observability": "^1.18.4",
+    "@mastra/pg": "^1.25.0",
+    "@mastra/rag": "^2.6.3",
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^17.4.2",
+    "drizzle-orm": "^0.39.3",
+    "fastify": "^5.11.3",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^3.0.0",
+    "@types/node": "^26.2.0",
+    "mastra": "^1.30.0",
+    "tsx": "^4.23.11",
+    "typescript": "^5.7.3",
+    "vitest": "^4.1.10"
+  }
+}
