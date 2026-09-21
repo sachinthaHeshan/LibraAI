@@ -2,19 +2,48 @@ set dotenv-load
 set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
 set windows-shell := ["cmd.exe", "/c"]
 
-# Run everything: Postgres, migrate, seed, API + web (default)
+# Run everything: Postgres, migrate, API + web (default)
 default: run
 
-# One-shot local stack
+# One-shot local stack (does not seed — run `just seed-admin` separately)
 run: setup
     just dev
+
+# Setup then API + web in Zellij panes
+run-all-zellij: setup
+	#!/usr/bin/env bash
+	session="libraai"
+	root="{{justfile_directory()}}"
+	layout="$root/zellij.kdl"
+
+	if ! command -v zellij >/dev/null 2>&1; then
+	  echo "zellij is required. Install with: brew install zellij"
+	  exit 1
+	fi
+
+	cd "$root"
+
+	if [[ -n "${ZELLIJ:-}" ]]; then
+	  zellij action new-tab --layout "$layout" --name libraai --cwd "$root"
+	  exit 0
+	fi
+
+	if zellij list-sessions -n 2>/dev/null | grep -E "^${session} " | grep -qv "EXITED"; then
+	  exec zellij attach "$session"
+	fi
+
+	if zellij list-sessions -s 2>/dev/null | grep -qx "$session"; then
+	  zellij delete-session "$session" --force
+	fi
+
+	exec zellij --session "$session" --new-session-with-layout "$layout"
 
 # API + web together
 [parallel]
 dev: api web
 
-# Install deps, start DB, migrate, seed
-setup: env install docker migrate seed
+# Install deps, start DB, migrate
+setup: env install docker migrate
 
 # Create .env from example if missing
 [script("node")]
@@ -68,9 +97,17 @@ migrate:
 studio:
     pnpm db:studio
 
-# Seed admin user (prompts for input when run interactively)
-seed:
-    pnpm --filter @libra/api seed
+# Seed admin user (prompts to select/create an org)
+seed-admin:
+    pnpm --filter @libra/api seed-admin
+
+# Seed sample catalog for an existing organization
+seed-catalog:
+    pnpm --filter @libra/api seed-catalog
+
+# Embed the book catalog into pgvector (requires GOOGLE_GENERATIVE_AI_API_KEY)
+index-books:
+	pnpm --filter @libra/api index-books
 
 # Fastify API on :3001
 api:

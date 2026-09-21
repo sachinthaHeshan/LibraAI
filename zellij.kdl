@@ -1,0 +1,14 @@
+layout {
+    pane split_direction="vertical" {
+        pane name="api" {
+            command "just"
+            args "api"
+            close_on_exit false
+        }
+        pane name="web" {
+            command "just"
+            args "web"
+            close_on_exit false
+        }
+    }
+}

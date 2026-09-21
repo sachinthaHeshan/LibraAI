@@ -15,6 +15,8 @@ type Book = BookInput & {
   id: string;
   availableCopies: number;
   publishedYear?: number | null;
+  genre?: string | null;
+  description?: string | null;
 };
 
 export default function BooksPage() {
@@ -286,6 +288,8 @@ export default function BooksPage() {
                 ? {
                     ...editingBook,
                     publishedYear: editingBook.publishedYear ?? undefined,
+                    genre: editingBook.genre ?? undefined,
+                    description: editingBook.description ?? undefined,
                   }
                 : undefined
             }

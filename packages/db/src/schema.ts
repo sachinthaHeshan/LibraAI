@@ -51,6 +51,8 @@ export const books = pgTable(
     totalCopies: integer("total_copies").notNull(),
     availableCopies: integer("available_copies").notNull(),
     publishedYear: integer("published_year"),
+    genre: text("genre"),
+    description: text("description"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },

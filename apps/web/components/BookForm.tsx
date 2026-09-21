@@ -10,6 +10,8 @@ export type BookInput = {
   isbn: string;
   totalCopies: number;
   publishedYear?: number;
+  genre?: string;
+  description?: string;
 };
 
 type BookFormProps = {
@@ -32,6 +34,10 @@ export function BookForm({
   const [publishedYear, setPublishedYear] = useState(
     initialValues?.publishedYear ? String(initialValues.publishedYear) : "",
   );
+  const [genre, setGenre] = useState(initialValues?.genre ?? "");
+  const [description, setDescription] = useState(
+    initialValues?.description ?? "",
+  );
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -47,6 +53,8 @@ export function BookForm({
         isbn: isbn.trim(),
         totalCopies: Number(totalCopies),
         ...(publishedYear ? { publishedYear: Number(publishedYear) } : {}),
+        ...(genre.trim() ? { genre: genre.trim() } : {}),
+        ...(description.trim() ? { description: description.trim() } : {}),
       });
     } catch (submitError) {
       setError(
@@ -108,6 +116,24 @@ export function BookForm({
           />
         </label>
       </div>
+      <label className="block text-sm font-semibold text-ink">
+        Genre
+        <input
+          className="field field-box mt-1.5"
+          onChange={(event) => setGenre(event.target.value)}
+          placeholder="Fantasy, science fiction, history…"
+          value={genre}
+        />
+      </label>
+      <label className="block text-sm font-semibold text-ink">
+        Description
+        <textarea
+          className="field field-box mt-1.5 min-h-24"
+          onChange={(event) => setDescription(event.target.value)}
+          placeholder="Short synopsis used for AI search"
+          value={description}
+        />
+      </label>
       {error ? (
         <p className="rounded-2xl bg-[#ffecea] px-3 py-2 text-sm font-medium text-danger" role="alert">
           {error}

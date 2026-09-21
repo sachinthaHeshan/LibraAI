@@ -1,25 +1,16 @@
-import { admins, createDb, organizations } from "@libra/db";
-import bcrypt from "bcryptjs";
+import { createDb, organizations } from "@libra/db";
 import { stdin, stdout } from "node:process";
 import * as readline from "node:readline/promises";
 import { z } from "zod";
-import { env } from "../env.js";
-
-const seedInputSchema = z.object({
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  email: z.string().email("Invalid email"),
-  password: z.string().min(1, "Password is required"),
-});
 
 const planSchema = z.enum(["starter", "pro", "enterprise"]);
 
-async function ask(rl: readline.Interface, question: string): Promise<string> {
+export async function ask(rl: readline.Interface, question: string): Promise<string> {
   const answer = await rl.question(question);
   return answer.trim();
 }
 
-async function askPassword(prompt: string): Promise<string> {
+export async function askPassword(prompt: string): Promise<string> {
   stdout.write(prompt);
 
   stdin.setRawMode(true);
@@ -59,7 +50,7 @@ async function askPassword(prompt: string): Promise<string> {
   });
 }
 
-async function promptOrganization(db: ReturnType<typeof createDb>) {
+export async function promptOrganization(db: ReturnType<typeof createDb>) {
   const orgs = await db.select().from(organizations).orderBy(organizations.name);
 
   const rl = readline.createInterface({ input: stdin, output: stdout });
@@ -121,53 +112,45 @@ async function promptOrganization(db: ReturnType<typeof createDb>) {
   }
 }
 
-async function promptSeedInput() {
+export async function selectOrganization(db: ReturnType<typeof createDb>) {
+  const orgs = await db.select().from(organizations).orderBy(organizations.name);
+
+  if (orgs.length === 0) {
+    console.error("No organizations found. Run `just seed-admin` first.");
+    process.exit(1);
+  }
+
+  if (orgs.length === 1) {
+    const org = orgs[0]!;
+    console.log(`Using organization ${org.name}`);
+    return { organizationId: org.id, orgName: org.name };
+  }
+
+  if (!stdin.isTTY) {
+    console.error("Catalog seed requires an interactive terminal when more than one org exists. Run: just seed-catalog");
+    process.exit(1);
+  }
+
   const rl = readline.createInterface({ input: stdin, output: stdout });
 
   try {
-    console.log("\nCreate admin user\n");
+    console.log("Select organization\n");
+    orgs.forEach((org, index) => {
+      console.log(`${index + 1}) ${org.name} (${org.plan})`);
+    });
 
     while (true) {
-      const firstName = await ask(rl, "First name: ");
-      const lastName = await ask(rl, "Last name: ");
-      const email = await ask(rl, "Email: ");
-      const password = await askPassword("Password: ");
+      const choice = await ask(rl, "\nChoice: ");
+      const num = Number.parseInt(choice, 10);
 
-      const parsed = seedInputSchema.safeParse({ firstName, lastName, email, password });
-      if (parsed.success) {
-        return parsed.data;
+      if (!Number.isNaN(num) && num >= 1 && num <= orgs.length) {
+        const org = orgs[num - 1]!;
+        return { organizationId: org.id, orgName: org.name };
       }
 
-      console.error(`\n${parsed.error.issues[0]?.message ?? "Invalid input"}. Try again.\n`);
+      console.error(`\nInvalid choice. Enter 1–${orgs.length}.\n`);
     }
   } finally {
     rl.close();
   }
 }
-
-if (!stdin.isTTY) {
-  console.error("Admin seed requires an interactive terminal. Run: just seed");
-  process.exit(1);
-}
-
-const db = createDb(env.DATABASE_URL);
-const { organizationId, orgName } = await promptOrganization(db);
-const { firstName, lastName, email, password } = await promptSeedInput();
-const passwordHash = await bcrypt.hash(password, 12);
-
-await db
-  .insert(admins)
-  .values({
-    firstName,
-    lastName,
-    email,
-    passwordHash,
-    organizationId,
-  })
-  .onConflictDoUpdate({
-    target: admins.email,
-    set: { firstName, lastName, passwordHash, organizationId },
-  });
-
-console.log(`Seeded admin ${firstName} ${lastName} <${email}> in org ${orgName}`);
-process.exit(0);

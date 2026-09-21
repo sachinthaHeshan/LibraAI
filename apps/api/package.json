@@ -6,13 +6,18 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "start": "tsx src/server.ts",
-    "seed": "tsx src/scripts/seed.ts",
+    "seed-admin": "tsx src/scripts/seed-admin.ts",
+    "seed-catalog": "tsx src/scripts/seed-catalog.ts",
+    "index-books": "tsx src/scripts/index-books.ts",
     "test": "vitest run"
   },
   "dependencies": {
     "@fastify/cors": "^11.3.0",
     "@fastify/jwt": "^10.2.1",
     "@libra/db": "workspace:*",
+    "@mastra/core": "^1.67.0",
+    "@mastra/pg": "^1.25.0",
+    "@mastra/rag": "^2.6.3",
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.39.3",

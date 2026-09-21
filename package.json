@@ -8,7 +8,9 @@
     "db:migrate": "pnpm --filter @libra/db migrate",
     "db:studio": "pnpm --filter @libra/db studio",
     "db:build": "pnpm --filter @libra/db build",
-    "db:seed": "pnpm --filter @libra/api seed",
+    "db:seed-admin": "pnpm --filter @libra/api seed-admin",
+    "db:seed-catalog": "pnpm --filter @libra/api seed-catalog",
+    "index-books": "pnpm --filter @libra/api index-books",
     "test:api": "pnpm --filter @libra/api test"
   },
   "engines": {

@@ -115,6 +115,49 @@ describe("books API", () => {
     expect(missing.statusCode).toBe(404);
   });
 
+  it("stores optional genre and description", async () => {
+    const isbn = randomUUID();
+    const create = await app.inject({
+      method: "POST",
+      url: "/books",
+      headers: { authorization: `Bearer ${token}` },
+      payload: {
+        title: "The Hobbit",
+        author: "J. R. R. Tolkien",
+        isbn,
+        totalCopies: 2,
+        publishedYear: 1937,
+        genre: "Fantasy",
+        description: "A hobbit joins dwarves on a quest to reclaim a mountain.",
+      },
+    });
+
+    expect(create.statusCode).toBe(201);
+    expect(create.json()).toMatchObject({
+      title: "The Hobbit",
+      genre: "Fantasy",
+      description: "A hobbit joins dwarves on a quest to reclaim a mountain.",
+    });
+
+    const patch = await app.inject({
+      method: "PATCH",
+      url: `/books/${create.json().id}`,
+      headers: { authorization: `Bearer ${token}` },
+      payload: { genre: "Adventure", description: "Updated synopsis." },
+    });
+    expect(patch.statusCode).toBe(200);
+    expect(patch.json()).toMatchObject({
+      genre: "Adventure",
+      description: "Updated synopsis.",
+    });
+
+    await app.inject({
+      method: "DELETE",
+      url: `/books/${create.json().id}`,
+      headers: { authorization: `Bearer ${token}` },
+    });
+  });
+
   it("rejects invalid create input", async () => {
     const response = await app.inject({
       method: "POST",
