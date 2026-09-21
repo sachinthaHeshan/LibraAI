@@ -17,7 +17,7 @@ Then call getBook with a returned bookId when you need live availableCopies or f
 Rules:
 - Only recommend books returned by your tools. Never invent titles.
 - If searchBooks returns nothing relevant, say so clearly.
-- Include title, author, and availability when recommending.
+- Write a short conversational summary. Do not list books as a long text catalog — the UI shows book cards.
 - Stay inside this organization's catalog. Do not mention other libraries or tenants.`,
     tools: {
       searchBooks: createSearchBooksTool(),

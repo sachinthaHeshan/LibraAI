@@ -10,23 +10,32 @@ describe("ask-bar helpers", () => {
   });
 
   it("rejects empty drafts without sending or navigating", () => {
-    const sendMessage = vi.fn();
+    const startConversation = vi.fn();
     const navigate = vi.fn();
-    expect(submitAskDraft("   ", { sendMessage, navigate })).toBe(false);
-    expect(sendMessage).not.toHaveBeenCalled();
+    expect(submitAskDraft("   ", { startConversation, navigate })).toBe(false);
+    expect(startConversation).not.toHaveBeenCalled();
     expect(navigate).not.toHaveBeenCalled();
   });
 
-  it("sends then navigates to /chat for a non-empty draft", () => {
-    const sendMessage = vi.fn();
+  it("starts a conversation then navigates to /chat/:id", () => {
+    const startConversation = vi.fn().mockReturnValue("chat-42");
     const navigate = vi.fn();
-    expect(submitAskDraft("Find overdue loans", { sendMessage, navigate })).toBe(
+    expect(submitAskDraft("Find overdue loans", { startConversation, navigate })).toBe(
       true,
     );
-    expect(sendMessage).toHaveBeenCalledWith("Find overdue loans");
-    expect(navigate).toHaveBeenCalledWith("/chat");
-    expect(sendMessage.mock.invocationCallOrder[0]).toBeLessThan(
+    expect(startConversation).toHaveBeenCalledWith("Find overdue loans");
+    expect(navigate).toHaveBeenCalledWith("/chat/chat-42");
+    expect(startConversation.mock.invocationCallOrder[0]).toBeLessThan(
       navigate.mock.invocationCallOrder[0]!,
     );
+  });
+
+  it("does not navigate when starting a conversation returns no id", () => {
+    const startConversation = vi.fn().mockReturnValue("");
+    const navigate = vi.fn();
+    expect(submitAskDraft("Find overdue loans", { startConversation, navigate })).toBe(
+      false,
+    );
+    expect(navigate).not.toHaveBeenCalled();
   });
 });

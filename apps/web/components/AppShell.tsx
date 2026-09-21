@@ -101,7 +101,7 @@ const links = [
 
 type AppShellProps = {
   children: ReactNode;
-  title: string;
+  title?: string;
   subtitle?: string;
   actions?: ReactNode;
   aside?: ReactNode;
@@ -244,32 +244,36 @@ export function AppShell({
           }`}
         >
           <div className="min-w-0">
-            <div className="mb-5 flex flex-col gap-4 sm:mb-6 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <div className="flex flex-wrap items-center gap-3">
-                  <h1 className="text-2xl font-bold tracking-tight text-ink sm:text-[1.75rem]">
-                    {title}
-                  </h1>
-                  {subtitle ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-xs font-semibold text-[#6b7280] shadow-sm ring-1 ring-line">
-                      {subtitle}
-                      <svg
-                        aria-hidden
-                        className="h-3.5 w-3.5 shrink-0"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeLinecap="round"
-                        strokeWidth="1.8"
-                        viewBox="0 0 24 24"
-                      >
-                        <path d="m7 10 5 5 5-5" />
-                      </svg>
-                    </span>
-                  ) : null}
+            {title || actions ? (
+              <div className="mb-5 flex flex-col gap-4 sm:mb-6 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <div className="flex flex-wrap items-center gap-3">
+                    {title ? (
+                      <h1 className="max-w-[min(100%,36rem)] truncate text-2xl font-bold tracking-tight text-ink sm:text-[1.75rem]">
+                        {title}
+                      </h1>
+                    ) : null}
+                    {subtitle ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-xs font-semibold text-[#6b7280] shadow-sm ring-1 ring-line">
+                        {subtitle}
+                        <svg
+                          aria-hidden
+                          className="h-3.5 w-3.5 shrink-0"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeLinecap="round"
+                          strokeWidth="1.8"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="m7 10 5 5 5-5" />
+                        </svg>
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
+                {actions}
               </div>
-              {actions}
-            </div>
+            ) : null}
             {children}
           </div>
 

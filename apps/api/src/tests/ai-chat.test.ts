@@ -3,7 +3,22 @@ import { buildApp } from "../create-app.js";
 import { TEST_ADMIN } from "./test-admin.js";
 
 vi.mock("../mastra/run-chat.js", () => ({
-  generateSearchReply: vi.fn(async () => "The Hobbit is available (2 copies)."),
+  generateSearchReply: vi.fn(async () => ({
+    reply: "The Hobbit is available (2 copies).",
+    books: [
+      {
+        id: "11111111-1111-4111-8111-111111111111",
+        title: "The Hobbit",
+        author: "J. R. R. Tolkien",
+        isbn: "9780547928227",
+        genre: "Fantasy",
+        description: "A hobbit joins dwarves on a quest.",
+        publishedYear: 1937,
+        totalCopies: 4,
+        availableCopies: 2,
+      },
+    ],
+  })),
 }));
 
 describe("AI chat API", () => {
@@ -85,6 +100,19 @@ describe("AI chat API", () => {
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual({
       reply: "The Hobbit is available (2 copies).",
+      books: [
+        {
+          id: "11111111-1111-4111-8111-111111111111",
+          title: "The Hobbit",
+          author: "J. R. R. Tolkien",
+          isbn: "9780547928227",
+          genre: "Fantasy",
+          description: "A hobbit joins dwarves on a quest.",
+          publishedYear: 1937,
+          totalCopies: 4,
+          availableCopies: 2,
+        },
+      ],
     });
   });
 });

@@ -1,11 +1,11 @@
 import { createTool } from "@mastra/core/tools";
 import { createVectorQueryTool } from "@mastra/rag";
 import { z } from "zod";
+import { BOOK_EMBEDDINGS_INDEX, SEARCH_TOP_K } from "../constants.js";
 import {
-  BOOK_EMBEDDINGS_INDEX,
-  SEARCH_TOP_K,
-} from "../constants.js";
-import { bookEmbeddingProviderOptions, getBookEmbeddingModel } from "../embedder.js";
+  bookEmbeddingProviderOptions,
+  getBookEmbeddingModel,
+} from "../embedder.js";
 import {
   catalogVectorFilter,
   requireOrgIdFromContext,
