@@ -128,3 +128,18 @@ test:
 # Stop Postgres
 down:
     docker compose down
+
+
+
+#Drizzle
+drizzle-generate:
+    pnpm db:generate
+
+drizzle-migrate:
+    pnpm db:migrate
+
+drizzle-studio:
+    pnpm db:studio
+
+drizzle-down:
+    docker compose down

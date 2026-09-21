@@ -1,36 +1,14 @@
+import { type Db } from "@libra/db";
 import { createTool } from "@mastra/core/tools";
-import { createVectorQueryTool } from "@mastra/rag";
 import { z } from "zod";
-import { BOOK_EMBEDDINGS_INDEX, SEARCH_TOP_K } from "../constants.js";
-import {
-  bookEmbeddingProviderOptions,
-  getBookEmbeddingModel,
-} from "../embedder.js";
-import {
-  catalogVectorFilter,
-  requireOrgIdFromContext,
-} from "../request-org.js";
-import { getPgVector } from "../vector.js";
+import { requireOrgIdFromContext } from "../request-org.js";
+import { searchCatalogBooks } from "../search-catalog.js";
 
-export function createSearchBooksTool() {
-  const vectorQueryTool = createVectorQueryTool({
-    id: "book-vector-query",
-    description:
-      "Semantic search over this library's book catalog. Use for finding books by topic, similar titles, genre, plot, or natural-language questions.",
-    indexName: BOOK_EMBEDDINGS_INDEX,
-    model: getBookEmbeddingModel(),
-    vectorStore: async () => getPgVector(),
-    enableFilter: true,
-    providerOptions: bookEmbeddingProviderOptions,
-    databaseConfig: {
-      pgvector: { minScore: 0.25 },
-    },
-  });
-
+export function createSearchBooksTool(db: Db) {
   return createTool({
     id: "search-books",
     description:
-      "Semantic search over this library's book catalog. Use for finding books by topic, similar titles, genre, plot, or natural-language questions about titles the library might hold.",
+      "Search this library's book catalog by title, author, ISBN, genre, topic, or natural-language questions.",
     inputSchema: z.object({
       query: z
         .string()
@@ -38,24 +16,10 @@ export function createSearchBooksTool() {
         .describe("Natural language search query about books"),
     }),
     execute: async ({ query }, context) => {
-      const orgId = requireOrgIdFromContext(context?.requestContext);
-      const filter = catalogVectorFilter(orgId);
-      context?.requestContext?.setRaw("filter", filter);
-      context?.requestContext?.setRaw("topK", SEARCH_TOP_K);
-
-      const execute = vectorQueryTool.execute;
-      if (!execute) {
-        throw new Error("Vector query tool is not executable");
-      }
-
-      return execute(
-        {
-          queryText: query,
-          topK: SEARCH_TOP_K,
-          filter: JSON.stringify(filter),
-        },
-        context,
+      const orgId = requireOrgIdFromContext(
+        context?.requestContext as { get(key: string): unknown } | undefined,
       );
+      return searchCatalogBooks({ db, orgId, query });
     },
   });
 }

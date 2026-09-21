@@ -20,7 +20,7 @@ Rules:
 - Write a short conversational summary. Do not list books as a long text catalog — the UI shows book cards.
 - Stay inside this organization's catalog. Do not mention other libraries or tenants.`,
     tools: {
-      searchBooks: createSearchBooksTool(),
+      searchBooks: createSearchBooksTool(db),
       getBook: createGetBookTool(db),
     },
   });
