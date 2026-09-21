@@ -5,6 +5,10 @@ import { z } from "zod";
 import { AppError } from "../lib/errors.js";
 import { isUniqueViolation } from "../lib/pg.js";
 import { requireOrgId } from "../lib/org.js";
+import {
+  deleteBookEmbedding,
+  indexBookBestEffort,
+} from "../mastra/rag/index-book.js";
 
 const bookParamsSchema = z.object({
   id: z.string().uuid(),
@@ -14,12 +18,20 @@ const listBooksQuerySchema = z.object({
   q: z.string().optional(),
 });
 
+const optionalText = z
+  .string()
+  .trim()
+  .transform((value) => (value.length > 0 ? value : undefined))
+  .optional();
+
 const createBookSchema = z.object({
   title: z.string().min(1),
   author: z.string().min(1),
   isbn: z.string().min(1),
   totalCopies: z.number().int().min(1),
   publishedYear: z.number().int().optional(),
+  genre: optionalText,
+  description: optionalText,
 });
 
 const updateBookSchema = createBookSchema
@@ -42,6 +54,8 @@ export function createBooksRoutes(db: Db): FastifyPluginAsync {
                 ilike(books.title, `%${q}%`),
                 ilike(books.author, `%${q}%`),
                 ilike(books.isbn, `%${q}%`),
+                ilike(books.genre, `%${q}%`),
+                ilike(books.description, `%${q}%`),
               )
             : undefined,
         ),
@@ -76,6 +90,7 @@ export function createBooksRoutes(db: Db): FastifyPluginAsync {
           })
           .returning();
 
+        await indexBookBestEffort(book);
         return reply.status(201).send(book);
       } catch (error) {
         if (isUniqueViolation(error)) {
@@ -129,6 +144,11 @@ export function createBooksRoutes(db: Db): FastifyPluginAsync {
             .returning();
 
           return book;
+        }).then(async (book) => {
+          if (book) {
+            await indexBookBestEffort(book);
+          }
+          return book;
         });
       } catch (error) {
         if (isUniqueViolation(error)) {
@@ -165,6 +185,7 @@ export function createBooksRoutes(db: Db): FastifyPluginAsync {
         throw new AppError(404, "Book not found");
       }
 
+      await deleteBookEmbedding(deleted.id);
       return reply.status(204).send();
     });
   };

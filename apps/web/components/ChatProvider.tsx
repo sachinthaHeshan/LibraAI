@@ -12,8 +12,9 @@ import {
 
 import {
   createChatMessage,
-  createPlaceholderAssistantMessage,
+  fetchAssistantReply,
   isSendableContent,
+  toChatApiMessages,
   type ChatMessage,
 } from "@/lib/chat";
 
@@ -29,45 +30,54 @@ type ChatContextValue = {
 
 const ChatContext = createContext<ChatContextValue | null>(null);
 
-const REPLY_DELAY_MS = 600;
-
 export function ChatProvider({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [sending, setSending] = useState(false);
-  const replyTimeoutRef = useRef<number | null>(null);
+  const requestIdRef = useRef(0);
 
   const toggle = useCallback(() => setOpen((value) => !value), []);
   const close = useCallback(() => setOpen(false), []);
   const reset = useCallback(() => {
-    if (replyTimeoutRef.current !== null) {
-      window.clearTimeout(replyTimeoutRef.current);
-      replyTimeoutRef.current = null;
-    }
+    requestIdRef.current += 1;
     setOpen(false);
     setMessages([]);
     setSending(false);
   }, []);
 
-  const sendMessage = useCallback(
-    (content: string) => {
-      if (!isSendableContent(content) || sending) return;
+  const sendMessage = useCallback((content: string) => {
+    if (!isSendableContent(content) || sending) return;
 
-      const userMessage = createChatMessage("user", content.trim());
-      setMessages((previous) => [...previous, userMessage]);
-      setSending(true);
+    const userMessage = createChatMessage("user", content.trim());
+    const nextMessages = [...messages, userMessage];
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
 
-      replyTimeoutRef.current = window.setTimeout(() => {
-        replyTimeoutRef.current = null;
+    setMessages(nextMessages);
+    setSending(true);
+
+    void fetchAssistantReply(toChatApiMessages(nextMessages))
+      .then((reply) => {
+        if (requestId !== requestIdRef.current) return;
         setMessages((previous) => [
           ...previous,
-          createPlaceholderAssistantMessage(),
+          createChatMessage("assistant", reply),
         ]);
+      })
+      .catch((error: unknown) => {
+        if (requestId !== requestIdRef.current) return;
+        const message =
+          error instanceof Error ? error.message : "Unable to reach the search agent";
+        setMessages((previous) => [
+          ...previous,
+          createChatMessage("assistant", message),
+        ]);
+      })
+      .finally(() => {
+        if (requestId !== requestIdRef.current) return;
         setSending(false);
-      }, REPLY_DELAY_MS);
-    },
-    [sending],
-  );
+      });
+  }, [messages, sending]);
 
   const value = useMemo(
     () => ({ open, messages, sending, toggle, close, reset, sendMessage }),

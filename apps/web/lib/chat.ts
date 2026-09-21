@@ -1,3 +1,5 @@
+import { apiFetch } from "./api";
+
 export type ChatRole = "user" | "assistant";
 
 export type ChatMessage = {
@@ -36,4 +38,27 @@ export function createPlaceholderAssistantMessage(
   now: number = Date.now(),
 ): ChatMessage {
   return createChatMessage("assistant", PLACEHOLDER_ASSISTANT_REPLY, now);
+}
+
+export type ChatApiMessage = {
+  role: ChatRole;
+  content: string;
+};
+
+export function toChatApiMessages(messages: ChatMessage[]): ChatApiMessage[] {
+  return messages.map(({ role, content }) => ({ role, content }));
+}
+
+export async function fetchAssistantReply(
+  messages: ChatApiMessage[],
+  fetchJson: typeof apiFetch = apiFetch,
+): Promise<string> {
+  const data = await fetchJson<{ reply: string }>("/ai/chat", {
+    method: "POST",
+    body: JSON.stringify({ messages }),
+  });
+  if (!data.reply?.trim()) {
+    throw new Error("Empty assistant reply");
+  }
+  return data.reply;
 }

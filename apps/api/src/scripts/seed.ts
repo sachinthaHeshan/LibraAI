@@ -4,6 +4,7 @@ import { stdin, stdout } from "node:process";
 import * as readline from "node:readline/promises";
 import { z } from "zod";
 import { env } from "../env.js";
+import { seedSampleCatalog } from "./seed-catalog.js";
 
 const seedInputSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
@@ -170,4 +171,12 @@ await db
   });
 
 console.log(`Seeded admin ${firstName} ${lastName} <${email}> in org ${orgName}`);
+
+const inserted = await seedSampleCatalog(db, organizationId);
+if (inserted > 0) {
+  console.log(`Seeded ${inserted} sample catalog titles in ${orgName}`);
+} else {
+  console.log(`Sample catalog already present for ${orgName}`);
+}
+
 process.exit(0);

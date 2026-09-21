@@ -21,6 +21,8 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(1),
   PORT: z.coerce.number().int().positive().default(3001),
   CORS_ORIGIN: z.string().default("http://localhost:3000"),
+  GOOGLE_GENERATIVE_AI_API_KEY: z.string().optional(),
+  GOOGLE_API_KEY: z.string().optional(),
 });
 
 export const env = envSchema.parse(process.env);

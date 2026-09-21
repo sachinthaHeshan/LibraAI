@@ -6,6 +6,7 @@ import { ZodError } from "zod";
 import { env } from "./env.js";
 import { AppError } from "./lib/errors.js";
 import { authPlugin } from "./plugins/auth.js";
+import { createAiChatRoutes } from "./routes/ai-chat.js";
 import { createAuthRoutes } from "./routes/auth.js";
 import { createBooksRoutes } from "./routes/books.js";
 import { createHealthRoutes } from "./routes/health.js";
@@ -46,6 +47,7 @@ export async function buildApp(app: FastifyInstance = Fastify()) {
   await app.register(createMembersRoutes(db));
   await app.register(createLoansRoutes(db));
   await app.register(createStaffRoutes(db));
+  await app.register(createAiChatRoutes(db));
 
   return app;
 }

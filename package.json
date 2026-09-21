@@ -9,6 +9,7 @@
     "db:studio": "pnpm --filter @libra/db studio",
     "db:build": "pnpm --filter @libra/db build",
     "db:seed": "pnpm --filter @libra/api seed",
+    "index-books": "pnpm --filter @libra/api index-books",
     "test:api": "pnpm --filter @libra/api test"
   },
   "engines": {
