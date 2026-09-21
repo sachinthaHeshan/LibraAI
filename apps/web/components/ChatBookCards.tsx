@@ -26,16 +26,15 @@ function availability(book: ChatBook) {
 
 type ChatBookCardsProps = {
   books: ChatBook[];
-  compact?: boolean;
 };
 
-export function ChatBookCards({ books, compact = false }: ChatBookCardsProps) {
+export function ChatBookCards({ books }: ChatBookCardsProps) {
   if (books.length === 0) return null;
 
   return (
     <ul
       aria-label="Recommended books"
-      className={`mt-3 grid gap-2.5 ${compact ? "grid-cols-1" : "sm:grid-cols-2"}`}
+      className="mt-3 grid w-full grid-cols-1 gap-2"
     >
       {books.map((book) => {
         const status = availability(book);
@@ -44,35 +43,30 @@ export function ChatBookCards({ books, compact = false }: ChatBookCardsProps) {
           .join(" · ");
 
         return (
-          <li className="chat-book-card" key={book.id}>
-            <article className="flex gap-3 rounded-2xl border border-line bg-white p-3 shadow-sm">
+          <li className="chat-book-card w-full" key={book.id}>
+            <article className="flex w-full items-center gap-3 rounded-xl border border-line bg-white px-3 py-2 shadow-sm">
               <div
                 aria-hidden
-                className={`flex h-[4.75rem] w-[3.15rem] shrink-0 items-center justify-center rounded-md bg-gradient-to-br shadow-[inset_3px_0_0_rgba(255,255,255,0.25)] ${coverTone(book.title)} text-base font-bold text-white`}
+                className={`flex h-10 w-7 shrink-0 items-center justify-center rounded-md bg-gradient-to-br shadow-[inset_2px_0_0_rgba(255,255,255,0.25)] ${coverTone(book.title)} text-sm font-bold text-white`}
               >
                 {book.title.trim().charAt(0) || "B"}
               </div>
               <div className="min-w-0 flex-1">
                 <h3 className="truncate text-sm font-semibold text-ink">{book.title}</h3>
-                <p className="mt-0.5 truncate text-xs text-muted">{meta}</p>
-                {book.description && !compact ? (
-                  <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-[#4b5563]">
-                    {book.description}
-                  </p>
-                ) : null}
-                <div className="mt-2">
-                  <div className="mb-1 flex items-center justify-between gap-2 text-[11px] font-medium text-ink">
-                    <span>
-                      {book.availableCopies} / {book.totalCopies}
-                    </span>
-                    <span className="badge">
-                      <span className={`dot ${status.tone}`} />
-                      {status.label}
-                    </span>
-                  </div>
-                  <div className="meter" title={`${Math.round(status.ratio)}% available`}>
-                    <span style={{ width: `${status.ratio}%` }} />
-                  </div>
+                <p className="truncate text-xs text-muted">{meta}</p>
+              </div>
+              <div className="shrink-0">
+                <div className="mb-1 flex items-center justify-end gap-2 text-[11px] font-medium text-ink">
+                  <span>
+                    {book.availableCopies} / {book.totalCopies}
+                  </span>
+                  <span className="badge">
+                    <span className={`dot ${status.tone}`} />
+                    {status.label}
+                  </span>
+                </div>
+                <div className="meter ml-auto w-28" title={`${Math.round(status.ratio)}% available`}>
+                  <span style={{ width: `${status.ratio}%` }} />
                 </div>
               </div>
             </article>

@@ -29,4 +29,17 @@ describe("ChatBookCards", () => {
     expect(html).toContain("In stock");
     expect(html).toContain("chat-book-card");
   });
+
+  it("renders one short full-width card per row", () => {
+    const dune = {
+      ...hobbit,
+      id: "22222222-2222-4222-8222-222222222222",
+      title: "Dune",
+      author: "Frank Herbert",
+    };
+    const html = renderToStaticMarkup(<ChatBookCards books={[hobbit, dune]} />);
+    expect(html).toContain("grid-cols-1");
+    expect(html).not.toContain("sm:grid-cols-2");
+    expect(html).not.toContain("A hobbit joins dwarves on a quest.");
+  });
 });

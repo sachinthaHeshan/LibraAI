@@ -38,8 +38,8 @@ export function ChatThreadView({ messages, sending, onSend }: ChatThreadViewProp
               </p>
             </div>
           ) : (
-            <div className="max-w-2xl" key={message.id}>
-              <p className="break-words whitespace-pre-wrap text-sm leading-relaxed text-ink">
+            <div className="w-full" key={message.id}>
+              <p className="max-w-2xl break-words whitespace-pre-wrap text-sm leading-relaxed text-ink">
                 {message.content}
               </p>
               <ChatBookCards books={message.books ?? []} />

@@ -150,11 +150,11 @@ export function ChatWidget(): JSX.Element {
               ) : (
                 <div className="flex items-start gap-2" key={message.id}>
                   <ChatAvatar size="sm" />
-                  <div className="max-w-[85%] min-w-0">
-                    <p className="break-words whitespace-pre-wrap rounded-2xl rounded-bl-md bg-canvas px-3 py-2 text-sm text-ink">
+                  <div className="min-w-0 flex-1">
+                    <p className="max-w-[85%] break-words whitespace-pre-wrap rounded-2xl rounded-bl-md bg-canvas px-3 py-2 text-sm text-ink">
                       {message.content}
                     </p>
-                    <ChatBookCards books={message.books ?? []} compact />
+                    <ChatBookCards books={message.books ?? []} />
                   </div>
                 </div>
               ),

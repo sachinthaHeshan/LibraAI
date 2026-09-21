@@ -54,7 +54,7 @@ describe("searchCatalogBooks", () => {
     ]);
   });
 
-  it("keeps vector hits and appends unique keyword hits", async () => {
+  it("keeps related vector hits and appends unique keyword hits", async () => {
     const db = dbWithBooks([hobbit]);
 
     const result = await searchCatalogBooks({
@@ -64,8 +64,9 @@ describe("searchCatalogBooks", () => {
       vectorSearch: async () => [
         {
           bookId: "22222222-2222-4222-8222-222222222222",
-          title: "Dune",
-          author: "Frank Herbert",
+          title: "A Wizard of Earthsea",
+          author: "Ursula K. Le Guin",
+          genre: "Fantasy",
         },
       ],
     });
@@ -74,5 +75,26 @@ describe("searchCatalogBooks", () => {
       "22222222-2222-4222-8222-222222222222",
       hobbit.id,
     ]);
+  });
+
+  it("does not return unrelated books when nothing matches the query", async () => {
+    const db = dbWithBooks([]);
+
+    const result = await searchCatalogBooks({
+      db: db as never,
+      orgId: "org-1",
+      query: "Harry Potter",
+      vectorSearch: async () => [
+        {
+          bookId: hobbit.id,
+          title: hobbit.title,
+          author: hobbit.author,
+          genre: hobbit.genre,
+          text: hobbit.description,
+        },
+      ],
+    });
+
+    expect(result.relevantContext).toEqual([]);
   });
 });

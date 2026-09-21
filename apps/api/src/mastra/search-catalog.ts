@@ -106,6 +106,23 @@ export function mergeSearchHits(...groups: BookSearchHit[][]): BookSearchHit[] {
   return merged.slice(0, SEARCH_TOP_K);
 }
 
+function hitHaystack(hit: BookSearchHit): string {
+  return [hit.title, hit.author, hit.isbn, hit.genre, hit.text]
+    .filter((value): value is string => Boolean(value))
+    .join(" ")
+    .toLowerCase();
+}
+
+export function isHitRelatedToQuery(query: string, hit: BookSearchHit): boolean {
+  const terms = catalogSearchTerms(query);
+  if (terms.length === 0) {
+    return false;
+  }
+
+  const haystack = hitHaystack(hit);
+  return terms.some((term) => haystack.includes(term.toLowerCase()));
+}
+
 export async function keywordSearchBooks(
   db: Db,
   orgId: string,
@@ -220,9 +237,12 @@ export async function searchCatalogBooks(input: {
   }
 
   const keywordHits = await keywordSearchBooks(input.db, input.orgId, input.query);
+  const relatedVectorHits = vectorHits.filter((hit) =>
+    isHitRelatedToQuery(input.query, hit),
+  );
 
   return {
-    relevantContext: mergeSearchHits(vectorHits, keywordHits),
+    relevantContext: mergeSearchHits(relatedVectorHits, keywordHits),
     sources: [],
   };
 }
