@@ -27,8 +27,8 @@ export function createAiChatRoutes(db: Db): FastifyPluginAsync {
         throw new AppError(503, "AI search is not configured");
       }
 
-      const reply = await generateSearchReply({ db, orgId, messages });
-      return { reply };
+      const { reply, books } = await generateSearchReply({ db, orgId, messages });
+      return { reply, books };
     });
   };
 }

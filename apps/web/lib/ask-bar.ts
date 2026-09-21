@@ -6,12 +6,13 @@ export const ASK_PLACEHOLDER =
 export function submitAskDraft(
   draft: string,
   actions: {
-    sendMessage: (content: string) => void;
+    startConversation: (content: string) => string;
     navigate: (href: string) => void;
   },
 ): boolean {
   if (!isSendableContent(draft)) return false;
-  actions.sendMessage(draft);
-  actions.navigate("/chat");
+  const chatId = actions.startConversation(draft);
+  if (!chatId) return false;
+  actions.navigate(`/chat/${chatId}`);
   return true;
 }

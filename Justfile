@@ -97,6 +97,10 @@ migrate:
 studio:
     pnpm db:studio
 
+# Open Mastra Studio (http://localhost:4111)
+mastra-studio:
+    pnpm --filter @libra/api mastra-studio
+
 # Seed admin user (prompts to select/create an org)
 seed-admin:
     pnpm --filter @libra/api seed-admin
@@ -123,4 +127,19 @@ test:
 
 # Stop Postgres
 down:
+    docker compose down
+
+
+
+#Drizzle
+drizzle-generate:
+    pnpm db:generate
+
+drizzle-migrate:
+    pnpm db:migrate
+
+drizzle-studio:
+    pnpm db:studio
+
+drizzle-down:
     docker compose down

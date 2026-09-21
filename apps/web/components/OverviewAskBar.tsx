@@ -37,7 +37,7 @@ function SparklesIcon() {
 
 export function OverviewAskBar(): JSX.Element {
   const router = useRouter();
-  const { sendMessage, sending } = useChat();
+  const { startConversation, sending } = useChat();
   const [surface, setSurface] = useState<Surface>("pill");
   const [shape, setShape] = useState<Shape>("pill");
   const [motion, setMotion] = useState<Motion>("idle");
@@ -129,7 +129,7 @@ export function OverviewAskBar(): JSX.Element {
   function submit() {
     if (sending) return;
     const ok = submitAskDraft(draft, {
-      sendMessage,
+      startConversation,
       navigate: (href) => router.push(href),
     });
     if (ok) setDraft("");
@@ -194,17 +194,7 @@ export function OverviewAskBar(): JSX.Element {
                   />
                 </svg>
               </span>
-              <div className="flex items-center gap-2">
-                <span aria-hidden className="text-muted">
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24">
-                    <path
-                      d="M12 14a3 3 0 0 0 3-3V7a3 3 0 1 0-6 0v4a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0M12 18v3"
-                      stroke="currentColor"
-                      strokeLinecap="round"
-                      strokeWidth="1.8"
-                    />
-                  </svg>
-                </span>
+              <div className="flex items-center">
                 <button
                   aria-label="Send message"
                   className="flex h-10 w-10 items-center justify-center rounded-full bg-[#6b7280] text-white disabled:opacity-50"

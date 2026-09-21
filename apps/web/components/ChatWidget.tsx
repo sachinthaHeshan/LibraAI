@@ -10,7 +10,9 @@ import {
   useState,
 } from "react";
 
+import { ChatBookCards } from "@/components/ChatBookCards";
 import { useChat } from "@/components/ChatProvider";
+import { ThinkingIndicator } from "@/components/ThinkingIndicator";
 import { WELCOME_COPY } from "@/lib/chat";
 
 const AVATAR_SRC = "/chat-avatar.png?v=3";
@@ -148,15 +150,16 @@ export function ChatWidget(): JSX.Element {
               ) : (
                 <div className="flex items-start gap-2" key={message.id}>
                   <ChatAvatar size="sm" />
-                  <p className="max-w-[85%] break-words whitespace-pre-wrap rounded-2xl rounded-bl-md bg-canvas px-3 py-2 text-sm text-ink">
-                    {message.content}
-                  </p>
+                  <div className="min-w-0 flex-1">
+                    <p className="max-w-[85%] break-words whitespace-pre-wrap rounded-2xl rounded-bl-md bg-canvas px-3 py-2 text-sm text-ink">
+                      {message.content}
+                    </p>
+                    <ChatBookCards books={message.books ?? []} />
+                  </div>
                 </div>
               ),
             )}
-            {sending ? (
-              <p className="text-xs font-medium text-muted">Thinking…</p>
-            ) : null}
+            {sending ? <ThinkingIndicator compact /> : null}
           </div>
 
           <form className="border-t border-line p-3" onSubmit={onSubmit}>
@@ -183,17 +186,7 @@ export function ChatWidget(): JSX.Element {
                     />
                   </svg>
                 </span>
-                <div className="flex items-center gap-2">
-                  <span aria-hidden className="text-muted">
-                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24">
-                      <path
-                        d="M12 14a3 3 0 0 0 3-3V7a3 3 0 1 0-6 0v4a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0M12 18v3"
-                        stroke="currentColor"
-                        strokeLinecap="round"
-                        strokeWidth="1.8"
-                      />
-                    </svg>
-                  </span>
+                <div className="flex items-center">
                   <button
                     aria-label="Send message"
                     className="flex h-9 w-9 items-center justify-center rounded-full bg-[#6b7280] text-white disabled:opacity-50"

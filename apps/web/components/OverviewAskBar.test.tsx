@@ -7,7 +7,7 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("@/components/ChatProvider", () => ({
   useChat: () => ({
-    sendMessage: vi.fn(),
+    startConversation: vi.fn(),
     sending: false,
   }),
 }));

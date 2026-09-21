@@ -12,9 +12,27 @@ describe("requireOrgIdFromContext", () => {
   });
 
   it("throws when org id is missing", () => {
+    const previous = process.env.MASTRA_DEV_ORG_ID;
+    delete process.env.MASTRA_DEV_ORG_ID;
     expect(() => requireOrgIdFromContext(undefined)).toThrow(
       "organization context is required",
     );
+    if (previous === undefined) {
+      delete process.env.MASTRA_DEV_ORG_ID;
+    } else {
+      process.env.MASTRA_DEV_ORG_ID = previous;
+    }
+  });
+
+  it("falls back to MASTRA_DEV_ORG_ID when request context is empty", () => {
+    const previous = process.env.MASTRA_DEV_ORG_ID;
+    process.env.MASTRA_DEV_ORG_ID = "studio-org";
+    expect(requireOrgIdFromContext(undefined)).toBe("studio-org");
+    if (previous === undefined) {
+      delete process.env.MASTRA_DEV_ORG_ID;
+    } else {
+      process.env.MASTRA_DEV_ORG_ID = previous;
+    }
   });
 });
 

@@ -5,9 +5,12 @@ export type CatalogRequestValues = {
 };
 
 export function requireOrgIdFromContext(
-  requestContext: RequestContext<CatalogRequestValues> | undefined,
+  requestContext?: { get(key: string): unknown },
 ): string {
-  const orgId = requestContext?.get("orgId");
+  const fromContext = requestContext?.get("orgId");
+  const orgId =
+    (typeof fromContext === "string" && fromContext.trim()) ||
+    process.env.MASTRA_DEV_ORG_ID?.trim();
   if (!orgId) {
     throw new Error("organization context is required");
   }
