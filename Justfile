@@ -5,7 +5,7 @@ set windows-shell := ["cmd.exe", "/c"]
 # Run everything: Postgres, migrate, API + web (default)
 default: run
 
-# One-shot local stack (does not seed — run `just seed` separately)
+# One-shot local stack (does not seed — run `just seed-admin` separately)
 run: setup
     just dev
 
@@ -97,9 +97,13 @@ migrate:
 studio:
     pnpm db:studio
 
-# Seed admin user (prompts for input when run interactively)
-seed:
-    pnpm --filter @libra/api seed
+# Seed admin user (prompts to select/create an org)
+seed-admin:
+    pnpm --filter @libra/api seed-admin
+
+# Seed sample catalog for an existing organization
+seed-catalog:
+    pnpm --filter @libra/api seed-catalog
 
 # Embed the book catalog into pgvector (requires GOOGLE_GENERATIVE_AI_API_KEY)
 index-books:

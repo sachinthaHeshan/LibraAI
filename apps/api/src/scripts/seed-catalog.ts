@@ -1,8 +1,10 @@
-import { books, type Db } from "@libra/db";
-import { SAMPLE_BOOKS } from "./sample-books.js";
+import { books, createDb, type Db } from "@libra/db";
+import { env } from "../env.js";
 import { indexBookBestEffort } from "../mastra/rag/index-book.js";
+import { SAMPLE_BOOKS } from "./sample-books.js";
+import { selectOrganization } from "./seed-prompt.js";
 
-export async function seedSampleCatalog(db: Db, organizationId: string) {
+async function seedSampleCatalog(db: Db, organizationId: string) {
   let inserted = 0;
 
   for (const sample of SAMPLE_BOOKS) {
@@ -24,3 +26,15 @@ export async function seedSampleCatalog(db: Db, organizationId: string) {
 
   return inserted;
 }
+
+const db = createDb(env.DATABASE_URL);
+const { organizationId, orgName } = await selectOrganization(db);
+const inserted = await seedSampleCatalog(db, organizationId);
+
+if (inserted > 0) {
+  console.log(`Seeded ${inserted} sample catalog titles in ${orgName}`);
+} else {
+  console.log(`Sample catalog already present for ${orgName}`);
+}
+
+process.exit(0);

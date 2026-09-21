@@ -48,11 +48,9 @@ describe("AI chat API", () => {
     expect(response.statusCode).toBe(400);
   });
 
-  it("returns 503 when a Google API key is not configured", async () => {
-    const previousGen = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-    const previousGoogle = process.env.GOOGLE_API_KEY;
-    delete process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-    delete process.env.GOOGLE_API_KEY;
+  it("returns 503 when an Anthropic API key is not configured", async () => {
+    const previousAnthropic = process.env.ANTHROPIC_API_KEY;
+    delete process.env.ANTHROPIC_API_KEY;
 
     const response = await app.inject({
       method: "POST",
@@ -66,17 +64,14 @@ describe("AI chat API", () => {
       message: "AI search is not configured",
     });
 
-    if (previousGen !== undefined) {
-      process.env.GOOGLE_GENERATIVE_AI_API_KEY = previousGen;
-    }
-    if (previousGoogle !== undefined) {
-      process.env.GOOGLE_API_KEY = previousGoogle;
+    if (previousAnthropic !== undefined) {
+      process.env.ANTHROPIC_API_KEY = previousAnthropic;
     }
   });
 
   it("returns an agent reply when configured", async () => {
-    process.env.GOOGLE_GENERATIVE_AI_API_KEY =
-      process.env.GOOGLE_GENERATIVE_AI_API_KEY || "test-key";
+    process.env.ANTHROPIC_API_KEY =
+      process.env.ANTHROPIC_API_KEY || "test-key";
 
     const response = await app.inject({
       method: "POST",

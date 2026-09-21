@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "start": "tsx src/server.ts",
-    "seed": "tsx src/scripts/seed.ts",
+    "seed-admin": "tsx src/scripts/seed-admin.ts",
+    "seed-catalog": "tsx src/scripts/seed-catalog.ts",
     "index-books": "tsx src/scripts/index-books.ts",
     "test": "vitest run"
   },

@@ -10,8 +10,10 @@ members, loans, and staff admins.
   scoped to that org (composite uniqueness for ISBN/email per org)
 - Chosen plans (Starter / Pro / Enterprise) are **recorded without payment** —
   no billing or plan enforcement yet
-- `just seed` / `pnpm db:seed` prompts you to select or create an organization,
-  then create or update an admin in that org
+- `just seed-admin` / `pnpm db:seed-admin` prompts you to select or create an
+  organization, then create or update an admin in that org
+- `just seed-catalog` / `pnpm db:seed-catalog` inserts the sample catalog into
+  an existing organization
 
 ## Prerequisites
 
@@ -36,28 +38,36 @@ library. Sign in to reach the admin dashboard.
 To create or update an admin (prompts for organization):
 
 ```bash
-just seed
+just seed-admin
+```
+
+To insert the sample catalog into an existing organization:
+
+```bash
+just seed-catalog
 ```
 
 Change `JWT_SECRET` in `.env` for non-development use.
 
 ## AI catalog search
 
-LibraAI includes a Mastra **SearchAgent** that answers book questions with org-scoped vector RAG (Gemini + pgvector).
+LibraAI includes a Mastra **SearchAgent** that answers book questions with org-scoped vector RAG (Claude + Gemini embeddings + pgvector).
 
 1. Use Postgres with the `vector` extension. Local Compose uses `pgvector/pgvector:pg16`. If you already had a `postgres:16-alpine` volume, recreate it (`just down` then `docker volume rm libraai_pgdata`, or a fresh DB). **Hosted Postgres** (Dokploy or any remote instance) must have pgvector installed; as a superuser run `CREATE EXTENSION IF NOT EXISTS vector;`.
-2. Add a Google AI key to `.env`:
+2. Add keys to `.env`. Chat uses Anthropic; catalog embeddings still use Google:
 
 ```bash
-GOOGLE_GENERATIVE_AI_API_KEY=your-key
+ANTHROPIC_API_KEY=your-anthropic-key
+GOOGLE_GENERATIVE_AI_API_KEY=your-google-key
 ```
 
-`GOOGLE_API_KEY` is accepted as a fallback.
+`GOOGLE_API_KEY` is accepted as a fallback for embeddings.
 
-3. Seed an admin (this also inserts a sample catalog when the org has no matching ISBNs):
+3. Seed an admin, then the sample catalog (skipped when the org already has matching ISBNs):
 
 ```bash
-just seed
+just seed-admin
+just seed-catalog
 ```
 
 4. Embed the catalog (skipped automatically during API tests):
@@ -89,7 +99,7 @@ Run migrations manually against that database (from a machine with repo access):
 export DATABASE_URL='postgresql://...'
 pnpm install
 pnpm db:migrate
-pnpm db:seed   # optional: select/create org + admin
+pnpm db:seed-admin   # optional: select/create org + admin
 ```
 
 ### 2. API application
@@ -107,7 +117,8 @@ Environment variables:
 | `DATABASE_URL` | yes | Dokploy Postgres URL |
 | `JWT_SECRET` | yes | long random string |
 | `CORS_ORIGIN` | yes | `https://your-web-domain` |
-| `GOOGLE_GENERATIVE_AI_API_KEY` | yes (for AI search) | Google AI Studio key |
+| `ANTHROPIC_API_KEY` | yes (for AI chat) | Anthropic API key |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | yes (for embeddings) | Google AI Studio key |
 | `PORT` | no | `3451` |
 | `NODE_ENV` | no | `production` |
 
@@ -146,7 +157,8 @@ docker run --rm -e API_URL=http://host.docker.internal:3001 -p 3450:3450 libra-w
 | `just` / `just run` | Setup DB + start API and web together (does not seed) |
 | `just run-all-zellij` | Same as `just run`, with API and web in Zellij panes |
 | `just setup` | Env, install, Postgres, migrate |
-| `just seed` | Prompt to select/create an org and admin (also seeds a sample catalog) |
+| `just seed-admin` | Prompt to select/create an org and admin |
+| `just seed-catalog` | Seed the sample catalog into an existing organization |
 | `just index-books` | Embed the book catalog into pgvector (needs a Google API key) |
 | `just api` | Start the Fastify API on port 3001 |
 | `just web` | Start the Next.js admin UI on port 3000 |
@@ -154,7 +166,8 @@ docker run --rm -e API_URL=http://host.docker.internal:3001 -p 3450:3450 libra-w
 | `just test` | Run API tests |
 | `pnpm db:generate` | Generate Drizzle migrations from schema |
 | `pnpm db:migrate` | Apply migrations to Postgres |
-| `pnpm db:seed` | Prompt to select/create an org and admin |
+| `pnpm db:seed-admin` | Prompt to select/create an org and admin |
+| `pnpm db:seed-catalog` | Seed the sample catalog into an existing organization |
 
 ## Packages
 
