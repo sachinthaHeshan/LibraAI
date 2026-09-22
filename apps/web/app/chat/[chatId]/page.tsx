@@ -30,7 +30,13 @@ export default function ChatConversationPage() {
   }, [chatId, hydrated, openConversation, router]);
 
   return (
-    <AppShell title={conversation?.title ?? "Chat"}>
+    <AppShell
+      breadcrumb={{
+        current: conversation?.title ?? "Chat",
+        parentHref: "/chat",
+        parentLabel: "Chat",
+      }}
+    >
       <ChatThreadView
         messages={conversation?.messages ?? []}
         sending={sending && activeConversationId === chatId}

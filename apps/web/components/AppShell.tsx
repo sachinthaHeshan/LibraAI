@@ -7,6 +7,7 @@ import { type ReactNode, useEffect, useState } from "react";
 import { useChat } from "@/components/ChatProvider";
 import { ChatWidget } from "@/components/ChatWidget";
 import { Logo } from "@/components/Logo";
+import { PageBreadcrumb } from "@/components/PageBreadcrumb";
 import { clearToken } from "@/lib/auth";
 import {
   type CurrentUser,
@@ -99,12 +100,19 @@ const links = [
   },
 ];
 
+type AppShellBreadcrumb = {
+  parentLabel: string;
+  parentHref: string;
+  current: string;
+};
+
 type AppShellProps = {
   children: ReactNode;
   title?: string;
   subtitle?: string;
   actions?: ReactNode;
   aside?: ReactNode;
+  breadcrumb?: AppShellBreadcrumb;
 };
 
 export function AppShell({
@@ -113,6 +121,7 @@ export function AppShell({
   subtitle,
   actions,
   aside,
+  breadcrumb,
 }: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -194,7 +203,17 @@ export function AppShell({
       <div className="min-w-0">
         <header className="sticky top-0 z-30 border-b border-line bg-white/90 px-4 py-3 backdrop-blur sm:px-6 lg:px-8">
           <div className="flex items-center justify-between gap-3">
-            <Logo className="lg:hidden" href="/overview" size="sm" />
+            {breadcrumb ? (
+              <div className="min-w-0 flex-1">
+                <PageBreadcrumb
+                  current={breadcrumb.current}
+                  parentHref={breadcrumb.parentHref}
+                  parentLabel={breadcrumb.parentLabel}
+                />
+              </div>
+            ) : (
+              <Logo className="lg:hidden" href="/overview" size="sm" />
+            )}
 
             <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
               <button aria-label="Settings" className="btn-icon" type="button">
