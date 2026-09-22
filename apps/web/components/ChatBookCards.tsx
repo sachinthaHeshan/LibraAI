@@ -1,16 +1,6 @@
+import Image from "next/image";
+
 import type { ChatBook } from "@/lib/chat";
-
-const COVER_TONES = [
-  "from-[#60a5fa] to-[#2563eb]",
-  "from-[#818cf8] to-[#4f46e5]",
-  "from-[#a78bfa] to-[#7c3aed]",
-  "from-[#38bdf8] to-[#0284c7]",
-];
-
-function coverTone(title: string): string {
-  const hash = [...title].reduce((sum, char) => sum + char.charCodeAt(0), 0);
-  return COVER_TONES[hash % COVER_TONES.length]!;
-}
 
 function availability(book: ChatBook) {
   const ratio =
@@ -45,11 +35,15 @@ export function ChatBookCards({ books }: ChatBookCardsProps) {
         return (
           <li className="chat-book-card w-full" key={book.id}>
             <article className="flex w-full items-center gap-3 rounded-xl border border-line bg-white px-3 py-2 shadow-sm">
-              <div
-                aria-hidden
-                className={`flex h-10 w-7 shrink-0 items-center justify-center rounded-md bg-gradient-to-br shadow-[inset_2px_0_0_rgba(255,255,255,0.25)] ${coverTone(book.title)} text-sm font-bold text-white`}
-              >
-                {book.title.trim().charAt(0) || "B"}
+              <div aria-hidden className="flex h-10 w-10 shrink-0 items-center justify-center">
+                <Image
+                  alt=""
+                  className="h-10 w-10 object-contain"
+                  height={40}
+                  src="/book.png"
+                  unoptimized
+                  width={43}
+                />
               </div>
               <div className="min-w-0 flex-1">
                 <h3 className="truncate text-sm font-semibold text-ink">{book.title}</h3>
