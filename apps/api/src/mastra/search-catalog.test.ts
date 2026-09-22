@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
-import { catalogSearchTerms, searchCatalogBooks } from "./search-catalog.js";
+import { describe, expect, it } from "vitest";
+import { searchCatalogBooks, type BookSearchHit } from "./search-catalog.js";
 
 const hobbit = {
   id: "11111111-1111-4111-8111-111111111111",
@@ -11,88 +11,94 @@ const hobbit = {
   publishedYear: 1937,
 };
 
-function dbWithBooks(rows: unknown[]) {
-  return {
-    query: {
-      books: {
-        findMany: vi.fn().mockResolvedValue(rows),
-      },
-    },
-  };
-}
+const hobbitHit: BookSearchHit = {
+  bookId: hobbit.id,
+  title: hobbit.title,
+  author: hobbit.author,
+  isbn: hobbit.isbn,
+  genre: hobbit.genre,
+  publishedYear: hobbit.publishedYear,
+  text: hobbit.description,
+};
 
-describe("catalogSearchTerms", () => {
-  it("keeps distinctive words from a natural-language question", () => {
-    expect(catalogSearchTerms("Do we have The Hobbit?")).toEqual(
-      expect.arrayContaining(["Hobbit"]),
-    );
-    expect(catalogSearchTerms("Do we have The Hobbit?")).not.toEqual(
-      expect.arrayContaining(["The", "have"]),
-    );
-  });
-});
+const duneHit: BookSearchHit = {
+  bookId: "55555555-5555-4555-8555-555555555555",
+  title: "Dune",
+  author: "Frank Herbert",
+  isbn: "9780441172719",
+  genre: "Science Fiction",
+  text: "Paul Atreides on Arrakis.",
+};
 
 describe("searchCatalogBooks", () => {
   it("returns keyword matches when vector search fails", async () => {
-    const db = dbWithBooks([hobbit]);
-
     const result = await searchCatalogBooks({
-      db: db as never,
+      db: {} as never,
       orgId: "org-1",
-      query: "Hobbit",
+      query: "Do we have The Hobbit?",
       vectorSearch: async () => {
         throw new Error('could not access file "vector"');
       },
+      keywordSearch: async () => [{ ...hobbitHit, keywordScore: 0.9 }],
     });
 
     expect(result.relevantContext).toEqual([
       expect.objectContaining({
         bookId: hobbit.id,
         title: "The Hobbit",
-        author: "J. R. R. Tolkien",
+        matchType: "title",
       }),
     ]);
   });
 
-  it("keeps related vector hits and appends unique keyword hits", async () => {
-    const db = dbWithBooks([hobbit]);
-
+  it("fuses vector and keyword hits and prefers the title match", async () => {
+    const earthseaId = "22222222-2222-4222-8222-222222222222";
     const result = await searchCatalogBooks({
-      db: db as never,
+      db: {} as never,
       orgId: "org-1",
-      query: "fantasy",
+      query: "Do we have The Hobbit?",
       vectorSearch: async () => [
+        { ...hobbitHit, vectorScore: 0.72 },
         {
-          bookId: "22222222-2222-4222-8222-222222222222",
+          bookId: earthseaId,
           title: "A Wizard of Earthsea",
           author: "Ursula K. Le Guin",
           genre: "Fantasy",
+          vectorScore: 0.5,
         },
       ],
+      keywordSearch: async () => [{ ...hobbitHit, keywordScore: 0.8 }],
     });
 
-    expect(result.relevantContext.map((hit) => hit.bookId)).toEqual([
-      "22222222-2222-4222-8222-222222222222",
-      hobbit.id,
+    expect(result.relevantContext[0]?.bookId).toBe(hobbit.id);
+    expect(result.relevantContext[0]?.matchType).toBe("title");
+    expect(result.relevantContext.map((hit) => hit.bookId)).toContain(earthseaId);
+  });
+
+  it("keeps a high-scoring semantic hit without query-word overlap", async () => {
+    const result = await searchCatalogBooks({
+      db: {} as never,
+      orgId: "org-1",
+      query: "science fiction about a desert planet",
+      vectorSearch: async () => [{ ...duneHit, vectorScore: 0.82 }],
+      keywordSearch: async () => [],
+    });
+
+    expect(result.relevantContext).toEqual([
+      expect.objectContaining({
+        bookId: duneHit.bookId,
+        matchType: "semantic",
+      }),
     ]);
   });
 
   it("does not return unrelated books when nothing matches the query", async () => {
-    const db = dbWithBooks([]);
-
     const result = await searchCatalogBooks({
-      db: db as never,
+      db: {} as never,
       orgId: "org-1",
       query: "Harry Potter",
-      vectorSearch: async () => [
-        {
-          bookId: hobbit.id,
-          title: hobbit.title,
-          author: hobbit.author,
-          genre: hobbit.genre,
-          text: hobbit.description,
-        },
-      ],
+      vectorSearch: async () => [hobbitHit],
+      keywordSearch: async () => [],
     });
 
     expect(result.relevantContext).toEqual([]);

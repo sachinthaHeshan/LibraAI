@@ -87,6 +87,16 @@ describe("books API", () => {
     expect(search.statusCode).toBe(200);
     expect(search.json().map((book: { id: string }) => book.id)).toContain(bookId);
 
+    const titleSearch = await app.inject({
+      method: "GET",
+      url: "/books?q=Dune",
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(titleSearch.statusCode).toBe(200);
+    expect(titleSearch.json().map((book: { id: string }) => book.id)).toContain(
+      bookId,
+    );
+
     const patch = await app.inject({
       method: "PATCH",
       url: `/books/${bookId}`,
@@ -154,6 +164,70 @@ describe("books API", () => {
     await app.inject({
       method: "DELETE",
       url: `/books/${create.json().id}`,
+      headers: { authorization: `Bearer ${token}` },
+    });
+  });
+
+  it("ranks title matches ahead of description-only full-text hits", async () => {
+    const titleBook = await app.inject({
+      method: "POST",
+      url: "/books",
+      headers: { authorization: `Bearer ${token}` },
+      payload: {
+        title: "Atomic Habits",
+        author: "James Clear",
+        isbn: randomUUID(),
+        totalCopies: 1,
+        genre: "Self-help",
+        description: "A system for compounding identity change.",
+      },
+    });
+    const descriptionBook = await app.inject({
+      method: "POST",
+      url: "/books",
+      headers: { authorization: `Bearer ${token}` },
+      payload: {
+        title: "Sleep Better",
+        author: "Jane Doe",
+        isbn: randomUUID(),
+        totalCopies: 1,
+        genre: "Self-help",
+        description: "How daily habits affect rest and recovery.",
+      },
+    });
+    expect(titleBook.statusCode).toBe(201);
+    expect(descriptionBook.statusCode).toBe(201);
+
+    const created = new Set([titleBook.json().id, descriptionBook.json().id]);
+    const rankedIds = (q: string) =>
+      app
+        .inject({
+          method: "GET",
+          url: `/books?q=${encodeURIComponent(q)}`,
+          headers: { authorization: `Bearer ${token}` },
+        })
+        .then((response) => {
+          expect(response.statusCode).toBe(200);
+          return response
+            .json()
+            .map((book: { id: string }) => book.id)
+            .filter((id: string) => created.has(id));
+        });
+
+    expect(await rankedIds("Atomic Habits")).toEqual([titleBook.json().id]);
+    expect(await rankedIds("habits")).toEqual([
+      titleBook.json().id,
+      descriptionBook.json().id,
+    ]);
+
+    await app.inject({
+      method: "DELETE",
+      url: `/books/${titleBook.json().id}`,
+      headers: { authorization: `Bearer ${token}` },
+    });
+    await app.inject({
+      method: "DELETE",
+      url: `/books/${descriptionBook.json().id}`,
       headers: { authorization: `Bearer ${token}` },
     });
   });

@@ -12,8 +12,8 @@ members, loans, and staff admins.
   no billing or plan enforcement yet
 - `just seed-admin` / `pnpm db:seed-admin` prompts you to select or create an
   organization, then create or update an admin in that org
-- `just seed-catalog` / `pnpm db:seed-catalog` inserts the sample catalog into
-  an existing organization
+- `just seed-catalog` / `pnpm db:seed-catalog` upserts the sample catalog into
+  an existing organization (matching ISBNs get updated descriptions)
 
 ## Prerequisites
 
@@ -51,10 +51,11 @@ Change `JWT_SECRET` in `.env` for non-development use.
 
 ## AI catalog search
 
-LibraAI includes a Mastra **SearchAgent** that answers book questions with org-scoped vector RAG (Claude + Gemini embeddings + pgvector).
+LibraAI includes a Mastra **SearchAgent** that answers book questions with org-scoped hybrid retrieval: Postgres full-text search (`tsvector` + `ts_rank_cd`) fused with Gemini embeddings in pgvector using Reciprocal Rank Fusion. Exact title, author, and ISBN matches are boosted.
 
 1. Use Postgres with the `vector` extension. Local Compose uses `pgvector/pgvector:pg16`. If you already had a `postgres:16-alpine` volume, recreate it (`just down` then `docker volume rm libraai_pgdata`, or a fresh DB). **Hosted Postgres** (Dokploy or any remote instance) must have pgvector installed; as a superuser run `CREATE EXTENSION IF NOT EXISTS vector;`.
-2. Add keys to `.env`. Chat uses Anthropic; catalog embeddings still use Google:
+2. Apply migrations so `books.search_vector` exists (`just migrate` / `pnpm db:migrate`).
+3. Add keys to `.env`. Chat uses Anthropic; catalog embeddings still use Google:
 
 ```bash
 ANTHROPIC_API_KEY=your-anthropic-key
@@ -63,25 +64,25 @@ GOOGLE_GENERATIVE_AI_API_KEY=your-google-key
 
 `GOOGLE_API_KEY` is accepted as a fallback for embeddings.
 
-3. Seed an admin, then the sample catalog (skipped when the org already has matching ISBNs):
+4. Seed an admin, then upsert the sample catalog (re-run this after pulling description updates):
 
 ```bash
 just seed-admin
 just seed-catalog
 ```
 
-4. Embed the catalog (skipped automatically during API tests):
+5. Embed the catalog (skipped automatically during API tests):
 
 ```bash
 just index-books
 ```
 
-5. Sign in and ask in the chat widget, overview ask bar, or `/chat`. Example queries:
+6. Sign in and ask in the chat widget, overview ask bar, or `/chat`. Example queries:
    - “Recommend something like Tolkien”
    - “Do we have Atomic Habits?”
    - “Science fiction about a desert planet”
 
-Book create/update also re-embeds when a Google key is present. Add a **genre** and **description** on each title so semantic search has enough text.
+Book create/update also re-embeds when a Google key is present. Add a **genre** and **description** on each title so both full-text search and embeddings have enough text.
 
 The chat API is authenticated `POST /ai/chat` with `{ "messages": [{ "role": "user", "content": "..." }] }`.
 
@@ -158,7 +159,7 @@ docker run --rm -e API_URL=http://host.docker.internal:3001 -p 3450:3450 libra-w
 | `just run-all-zellij` | Same as `just run`, with API and web in Zellij panes |
 | `just setup` | Env, install, Postgres, migrate |
 | `just seed-admin` | Prompt to select/create an org and admin |
-| `just seed-catalog` | Seed the sample catalog into an existing organization |
+| `just seed-catalog` | Upsert the sample catalog (including improved descriptions) into an existing organization |
 | `just index-books` | Embed the book catalog into pgvector (needs a Google API key) |
 | `just api` | Start the Fastify API on port 3001 |
 | `just web` | Start the Next.js admin UI on port 3000 |
@@ -167,7 +168,7 @@ docker run --rm -e API_URL=http://host.docker.internal:3001 -p 3450:3450 libra-w
 | `pnpm db:generate` | Generate Drizzle migrations from schema |
 | `pnpm db:migrate` | Apply migrations to Postgres |
 | `pnpm db:seed-admin` | Prompt to select/create an org and admin |
-| `pnpm db:seed-catalog` | Seed the sample catalog into an existing organization |
+| `pnpm db:seed-catalog` | Upsert the sample catalog into an existing organization |
 
 ## Packages
 
