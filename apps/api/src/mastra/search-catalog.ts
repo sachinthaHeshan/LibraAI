@@ -1,14 +1,21 @@
-import { books, type Db } from "@libra/db";
-import { and, eq, ilike, or } from "drizzle-orm";
+import { bookApiColumns, books, type Db } from "@libra/db";
+import { and, eq, sql } from "drizzle-orm";
 import {
   BOOK_EMBEDDINGS_INDEX,
-  SEARCH_TOP_K,
+  SEARCH_CANDIDATE_K,
+  VECTOR_MIN_SCORE,
 } from "./constants.js";
 import {
   bookEmbeddingProviderOptions,
   getBookEmbeddingModel,
 } from "./embedder.js";
 import { catalogVectorFilter } from "./request-org.js";
+import { fuseSearchHits, type SearchMatchType } from "./search-rank.js";
+import {
+  isbnDigits,
+  normalizeRetrievalQuery,
+  retrievalQueryForFts,
+} from "./search-query.js";
 import { getPgVector } from "./vector.js";
 
 export type BookSearchHit = {
@@ -19,6 +26,10 @@ export type BookSearchHit = {
   genre?: string | null;
   publishedYear?: number | null;
   text?: string;
+  keywordScore?: number;
+  vectorScore?: number;
+  score?: number;
+  matchType?: SearchMatchType;
 };
 
 export type SearchCatalogResult = {
@@ -26,52 +37,20 @@ export type SearchCatalogResult = {
   sources: unknown[];
 };
 
-const STOPWORDS = new Set([
-  "the",
-  "and",
-  "for",
-  "have",
-  "does",
-  "did",
-  "you",
-  "are",
-  "was",
-  "were",
-  "but",
-  "not",
-  "our",
-  "your",
-  "this",
-  "that",
-  "with",
-  "from",
-  "like",
-  "find",
-  "book",
-  "books",
-  "title",
-  "about",
-  "something",
-  "recommend",
-  "please",
-  "what",
-  "do",
-  "we",
-]);
-
-export function catalogSearchTerms(query: string): string[] {
-  const trimmed = query.trim();
-  const terms = new Set<string>();
-  if (trimmed) {
-    terms.add(trimmed);
-  }
-  for (const part of trimmed.split(/[^\p{L}\p{N}]+/u)) {
-    if (part.length >= 3 && !STOPWORDS.has(part.toLowerCase())) {
-      terms.add(part);
-    }
-  }
-  return [...terms];
-}
+export type CatalogBookRecord = {
+  id: string;
+  organizationId: string;
+  title: string;
+  author: string;
+  isbn: string;
+  totalCopies: number;
+  availableCopies: number;
+  publishedYear: number | null;
+  genre: string | null;
+  description: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
 
 function toHit(book: {
   id: string;
@@ -81,6 +60,7 @@ function toHit(book: {
   genre: string | null;
   description: string | null;
   publishedYear: number | null;
+  keywordScore?: number;
 }): BookSearchHit {
   return {
     bookId: book.id,
@@ -90,37 +70,78 @@ function toHit(book: {
     genre: book.genre,
     publishedYear: book.publishedYear,
     text: book.description ?? undefined,
+    keywordScore: book.keywordScore,
   };
 }
 
-export function mergeSearchHits(...groups: BookSearchHit[][]): BookSearchHit[] {
-  const seen = new Set<string>();
-  const merged: BookSearchHit[] = [];
-  for (const group of groups) {
-    for (const hit of group) {
-      if (!hit.bookId || seen.has(hit.bookId)) continue;
-      seen.add(hit.bookId);
-      merged.push(hit);
-    }
-  }
-  return merged.slice(0, SEARCH_TOP_K);
-}
-
-function hitHaystack(hit: BookSearchHit): string {
-  return [hit.title, hit.author, hit.isbn, hit.genre, hit.text]
-    .filter((value): value is string => Boolean(value))
-    .join(" ")
-    .toLowerCase();
-}
-
-export function isHitRelatedToQuery(query: string, hit: BookSearchHit): boolean {
-  const terms = catalogSearchTerms(query);
-  if (terms.length === 0) {
-    return false;
+export async function searchBooksFts(
+  db: Db,
+  orgId: string,
+  query: string,
+): Promise<Array<CatalogBookRecord & { keywordScore: number }>> {
+  const trimmed = query.trim();
+  const ftsQuery = retrievalQueryForFts(query);
+  const isbn = isbnDigits(query);
+  if (!ftsQuery && !isbn && !trimmed) {
+    return [];
   }
 
-  const haystack = hitHaystack(hit);
-  return terms.some((term) => haystack.includes(term.toLowerCase()));
+  const englishQuery = ftsQuery
+    ? sql`websearch_to_tsquery('english', ${ftsQuery})`
+    : null;
+  const simpleQuery = ftsQuery
+    ? sql`plainto_tsquery('simple', ${ftsQuery})`
+    : isbn
+      ? sql`plainto_tsquery('simple', ${isbn})`
+      : null;
+
+  const ftsMatch = [englishQuery, simpleQuery]
+    .filter((value): value is NonNullable<typeof value> => value !== null)
+    .map((tsquery) => sql`${books.searchVector} @@ ${tsquery}`);
+
+  const match = sql`(${sql.join(
+    [
+      ...ftsMatch,
+      sql`${books.isbn} = ${trimmed}`,
+      ...(isbn ? [sql`${books.isbn} = ${isbn}`] : []),
+    ],
+    sql` OR `,
+  )})`;
+
+  const rankParts = [englishQuery, simpleQuery]
+    .filter((value): value is NonNullable<typeof value> => value !== null)
+    .map((tsquery) => sql`ts_rank_cd(${books.searchVector}, ${tsquery}, 32)`);
+  const textRank =
+    rankParts.length > 1
+      ? sql`GREATEST(${sql.join(rankParts, sql`, `)})`
+      : rankParts[0] ?? sql`0`;
+  const rank = sql`(CASE WHEN ${books.isbn} = ${trimmed} OR ${books.isbn} = ${isbn ?? trimmed} THEN 1 ELSE ${textRank} END)`;
+
+  return db
+    .select({
+      ...bookApiColumns,
+      keywordScore: sql<number>`${rank}`.as("keyword_score"),
+    })
+    .from(books)
+    .where(and(eq(books.organizationId, orgId), match))
+    .orderBy(sql`${rank} DESC`)
+    .limit(SEARCH_CANDIDATE_K);
+}
+
+export async function listCatalogBooks(
+  db: Db,
+  orgId: string,
+  query?: string,
+): Promise<CatalogBookRecord[]> {
+  if (!query?.trim()) {
+    return db
+      .select(bookApiColumns)
+      .from(books)
+      .where(eq(books.organizationId, orgId));
+  }
+
+  const rows = await searchBooksFts(db, orgId, query);
+  return rows.map(({ keywordScore: _keywordScore, ...book }) => book);
 }
 
 export async function keywordSearchBooks(
@@ -128,27 +149,7 @@ export async function keywordSearchBooks(
   orgId: string,
   query: string,
 ): Promise<BookSearchHit[]> {
-  const terms = catalogSearchTerms(query);
-  if (terms.length === 0) {
-    return [];
-  }
-
-  const termFilters = terms.flatMap((term) => {
-    const pattern = `%${term}%`;
-    return [
-      ilike(books.title, pattern),
-      ilike(books.author, pattern),
-      ilike(books.isbn, pattern),
-      ilike(books.genre, pattern),
-      ilike(books.description, pattern),
-    ];
-  });
-
-  const rows = await db.query.books.findMany({
-    where: and(eq(books.organizationId, orgId), or(...termFilters)),
-    limit: SEARCH_TOP_K,
-  });
-
+  const rows = await searchBooksFts(db, orgId, query);
   return rows.map(toHit);
 }
 
@@ -159,6 +160,16 @@ function isMissingVectorExtension(error: unknown) {
   return message.includes('could not access file "vector"');
 }
 
+function vectorRowScore(row: { score?: unknown; similarity?: unknown }): number | undefined {
+  if (typeof row.score === "number") {
+    return row.score;
+  }
+  if (typeof row.similarity === "number") {
+    return row.similarity;
+  }
+  return undefined;
+}
+
 export async function vectorSearchBooks(
   query: string,
   orgId: string,
@@ -167,9 +178,14 @@ export async function vectorSearchBooks(
     return [];
   }
 
+  const retrievalQuery = normalizeRetrievalQuery(query) || query.trim();
+  if (!retrievalQuery) {
+    return [];
+  }
+
   try {
     const embedded = await getBookEmbeddingModel().doEmbed({
-      values: [query],
+      values: [retrievalQuery],
       providerOptions: bookEmbeddingProviderOptions,
     });
     const vector = embedded.embeddings[0];
@@ -180,9 +196,9 @@ export async function vectorSearchBooks(
     const results = await getPgVector().query({
       indexName: BOOK_EMBEDDINGS_INDEX,
       queryVector: vector,
-      topK: SEARCH_TOP_K,
+      topK: SEARCH_CANDIDATE_K,
       filter: catalogVectorFilter(orgId),
-      minScore: 0.25,
+      minScore: VECTOR_MIN_SCORE,
     });
 
     return results.flatMap((row) => {
@@ -208,6 +224,7 @@ export async function vectorSearchBooks(
               ? metadata.publishedYear
               : undefined,
           text: typeof metadata.text === "string" ? metadata.text : undefined,
+          vectorScore: vectorRowScore(row),
         },
       ];
     });
@@ -225,6 +242,11 @@ export async function searchCatalogBooks(input: {
   orgId: string;
   query: string;
   vectorSearch?: (query: string, orgId: string) => Promise<BookSearchHit[]>;
+  keywordSearch?: (
+    db: Db,
+    orgId: string,
+    query: string,
+  ) => Promise<BookSearchHit[]>;
 }): Promise<SearchCatalogResult> {
   let vectorHits: BookSearchHit[] = [];
   try {
@@ -236,13 +258,18 @@ export async function searchCatalogBooks(input: {
     console.error("Vector book search failed", error);
   }
 
-  const keywordHits = await keywordSearchBooks(input.db, input.orgId, input.query);
-  const relatedVectorHits = vectorHits.filter((hit) =>
-    isHitRelatedToQuery(input.query, hit),
+  const keywordHits = await (input.keywordSearch ?? keywordSearchBooks)(
+    input.db,
+    input.orgId,
+    input.query,
   );
 
   return {
-    relevantContext: mergeSearchHits(relatedVectorHits, keywordHits),
+    relevantContext: fuseSearchHits({
+      query: input.query,
+      keywordHits,
+      vectorHits,
+    }),
     sources: [],
   };
 }

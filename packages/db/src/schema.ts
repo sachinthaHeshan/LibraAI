@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
   pgTable,
   uuid,
@@ -7,7 +8,23 @@ import {
   date,
   pgEnum,
   uniqueIndex,
+  index,
+  customType,
 } from "drizzle-orm/pg-core";
+
+const tsvector = customType<{ data: string }>({
+  dataType() {
+    return "tsvector";
+  },
+});
+
+export const bookSearchVectorSql = sql`
+  setweight(to_tsvector('english', coalesce(title, '')), 'A')
+  || setweight(to_tsvector('english', coalesce(author, '')), 'A')
+  || setweight(to_tsvector('simple', coalesce(isbn, '')), 'A')
+  || setweight(to_tsvector('english', coalesce(genre, '')), 'B')
+  || setweight(to_tsvector('english', coalesce(description, '')), 'C')
+`;
 
 export const memberStatusEnum = pgEnum("member_status", ["active", "inactive"]);
 export const loanStatusEnum = pgEnum("loan_status", ["borrowed", "returned"]);
@@ -53,13 +70,30 @@ export const books = pgTable(
     publishedYear: integer("published_year"),
     genre: text("genre"),
     description: text("description"),
+    searchVector: tsvector("search_vector").generatedAlwaysAs(bookSearchVectorSql),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [
     uniqueIndex("books_organization_id_isbn_uidx").on(t.organizationId, t.isbn),
+    index("books_search_vector_idx").using("gin", t.searchVector),
   ],
 );
+
+export const bookApiColumns = {
+  id: books.id,
+  organizationId: books.organizationId,
+  title: books.title,
+  author: books.author,
+  isbn: books.isbn,
+  totalCopies: books.totalCopies,
+  availableCopies: books.availableCopies,
+  publishedYear: books.publishedYear,
+  genre: books.genre,
+  description: books.description,
+  createdAt: books.createdAt,
+  updatedAt: books.updatedAt,
+};
 
 export const members = pgTable(
   "members",

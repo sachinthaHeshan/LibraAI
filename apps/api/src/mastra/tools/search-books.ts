@@ -8,12 +8,14 @@ export function createSearchBooksTool(db: Db) {
   return createTool({
     id: "search-books",
     description:
-      "Search this library's book catalog by title, author, ISBN, genre, topic, or natural-language questions.",
+      "Search this library's book catalog by title, author, ISBN, genre, topic, or natural-language questions. Pass the extracted title, author, ISBN, or topic — not the full user sentence.",
     inputSchema: z.object({
       query: z
         .string()
         .min(1)
-        .describe("Natural language search query about books"),
+        .describe(
+          "Short title, author, ISBN, or topic query. Do not include filler like 'do we have' or 'please recommend'.",
+        ),
     }),
     execute: async ({ query }, context) => {
       const orgId = requireOrgIdFromContext(

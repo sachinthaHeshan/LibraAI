@@ -1,5 +1,5 @@
-import { books, loans, type Db } from "@libra/db";
-import { and, eq, ilike, or } from "drizzle-orm";
+import { bookApiColumns, books, loans, type Db } from "@libra/db";
+import { and, eq } from "drizzle-orm";
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { AppError } from "../lib/errors.js";
@@ -9,6 +9,7 @@ import {
   deleteBookEmbedding,
   indexBookBestEffort,
 } from "../mastra/rag/index-book.js";
+import { listCatalogBooks } from "../mastra/search-catalog.js";
 
 const bookParamsSchema = z.object({
   id: z.string().uuid(),
@@ -46,28 +47,17 @@ export function createBooksRoutes(db: Db): FastifyPluginAsync {
       const orgId = requireOrgId(request);
       const { q } = listBooksQuerySchema.parse(request.query);
 
-      return db.query.books.findMany({
-        where: and(
-          eq(books.organizationId, orgId),
-          q
-            ? or(
-                ilike(books.title, `%${q}%`),
-                ilike(books.author, `%${q}%`),
-                ilike(books.isbn, `%${q}%`),
-                ilike(books.genre, `%${q}%`),
-                ilike(books.description, `%${q}%`),
-              )
-            : undefined,
-        ),
-      });
+      return listCatalogBooks(db, orgId, q);
     });
 
     app.get("/books/:id", async (request) => {
       const orgId = requireOrgId(request);
       const { id } = bookParamsSchema.parse(request.params);
-      const book = await db.query.books.findFirst({
-        where: and(eq(books.id, id), eq(books.organizationId, orgId)),
-      });
+      const [book] = await db
+        .select(bookApiColumns)
+        .from(books)
+        .where(and(eq(books.id, id), eq(books.organizationId, orgId)))
+        .limit(1);
 
       if (!book) {
         throw new AppError(404, "Book not found");
@@ -88,7 +78,7 @@ export function createBooksRoutes(db: Db): FastifyPluginAsync {
             organizationId: orgId,
             availableCopies: input.totalCopies,
           })
-          .returning();
+          .returning(bookApiColumns);
 
         await indexBookBestEffort(book);
         return reply.status(201).send(book);
@@ -141,7 +131,7 @@ export function createBooksRoutes(db: Db): FastifyPluginAsync {
             .update(books)
             .set(update)
             .where(and(eq(books.id, id), eq(books.organizationId, orgId)))
-            .returning();
+            .returning(bookApiColumns);
 
           return book;
         }).then(async (book) => {
