@@ -28,6 +28,7 @@ describe("ChatBookCards", () => {
     expect(html).toContain("2 / 4");
     expect(html).toContain("In stock");
     expect(html).toContain("chat-book-card");
+    expect(html).toContain("/book.png");
   });
 
   it("renders one short full-width card per row", () => {
