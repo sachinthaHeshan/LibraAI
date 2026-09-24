@@ -10,7 +10,7 @@ import {
   getBookEmbeddingModel,
 } from "./embedder.js";
 import { catalogVectorFilter } from "./request-org.js";
-import { fuseSearchHits, type SearchMatchType } from "./search-rank.js";
+import { confirmsKeywordHit, fuseSearchHits, type SearchMatchType } from "./search-rank.js";
 import {
   isbnDigits,
   normalizeRetrievalQuery,
@@ -141,7 +141,18 @@ export async function listCatalogBooks(
   }
 
   const rows = await searchBooksFts(db, orgId, query);
-  return rows.map(({ keywordScore: _keywordScore, ...book }) => book);
+  return rows
+    .filter((book) =>
+      confirmsKeywordHit(query, {
+        bookId: book.id,
+        title: book.title,
+        author: book.author,
+        isbn: book.isbn,
+        genre: book.genre,
+        keywordScore: book.keywordScore,
+      }),
+    )
+    .map(({ keywordScore: _keywordScore, ...book }) => book);
 }
 
 export async function keywordSearchBooks(

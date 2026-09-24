@@ -81,15 +81,15 @@ describe("fuseSearchHits", () => {
       vectorHits: [],
     });
 
-    expect(fused[0]).toEqual(
+    expect(fused).toEqual([
       expect.objectContaining({
         bookId: hobbit.bookId,
         matchType: "title",
       }),
-    );
+    ]);
   });
 
-  it("ranks Atomic Habits above a book that only mentions habits", () => {
+  it("drops a description-only neighbor beside an exact title", () => {
     const fused = fuseSearchHits({
       query: "Atomic Habits",
       keywordHits: [
@@ -99,11 +99,28 @@ describe("fuseSearchHits", () => {
       vectorHits: [],
     });
 
-    expect(fused.map((hit) => hit.bookId)).toEqual([
-      atomicHabits.bookId,
-      habitsGuide.bookId,
-    ]);
+    expect(fused.map((hit) => hit.bookId)).toEqual([atomicHabits.bookId]);
     expect(fused[0]?.matchType).toBe("title");
+  });
+
+  it("drops a keyword-only hit that misses the title and ranks weakly", () => {
+    const fused = fuseSearchHits({
+      query: "Atomic Habits",
+      keywordHits: [{ ...habitsGuide, keywordScore: 0.05 }],
+      vectorHits: [],
+    });
+
+    expect(fused).toEqual([]);
+  });
+
+  it("drops a semantic-only hit below the semantic floor", () => {
+    const fused = fuseSearchHits({
+      query: "wizard school",
+      keywordHits: [],
+      vectorHits: [{ ...hobbit, vectorScore: 0.5 }],
+    });
+
+    expect(fused).toEqual([]);
   });
 
   it("keeps a high-scoring semantic hit whose title has no query words", () => {

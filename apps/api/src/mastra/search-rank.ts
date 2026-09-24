@@ -1,7 +1,10 @@
 import {
+  KEYWORD_MIN_SCORE,
+  RELATIVE_SCORE_RATIO,
   RRF_K,
   RRF_MIN_SCORE,
   SEARCH_TOP_K,
+  SEMANTIC_ONLY_MIN_SCORE,
   VECTOR_MIN_SCORE,
 } from "./constants.js";
 import {
@@ -86,6 +89,25 @@ export function matchTypeFor(query: string, hit: RankableHit): SearchMatchType {
   return "semantic";
 }
 
+export function confirmsKeywordHit(query: string, hit: RankableHit): boolean {
+  return exactMatchBoost(query, hit) > 0 || (hit.keywordScore ?? 0) >= KEYWORD_MIN_SCORE;
+}
+
+function passesPrecisionGate(
+  query: string,
+  hit: FusedSearchHit,
+  inKeyword: boolean,
+  inVector: boolean,
+): boolean {
+  if (inVector && !inKeyword) {
+    return (hit.vectorScore ?? 0) >= SEMANTIC_ONLY_MIN_SCORE;
+  }
+  if (inKeyword && !inVector) {
+    return confirmsKeywordHit(query, hit);
+  }
+  return true;
+}
+
 function mergeHits(left: RankableHit, right: RankableHit): RankableHit {
   return {
     ...left,
@@ -141,8 +163,21 @@ export function fuseSearchHits(input: {
   });
 
   const minScore = input.minScore ?? RRF_MIN_SCORE;
-  return fused
+  const ranked = fused
     .filter((hit) => hit.score >= minScore)
-    .sort((left, right) => right.score - left.score)
+    .filter((hit) =>
+      passesPrecisionGate(
+        input.query,
+        hit,
+        keywordRanks.has(hit.bookId),
+        vectorRanks.has(hit.bookId),
+      ),
+    )
+    .sort((left, right) => right.score - left.score);
+
+  const bestScore = ranked[0]?.score ?? 0;
+  const relativeCutoff = bestScore * RELATIVE_SCORE_RATIO;
+  return ranked
+    .filter((hit) => hit.score >= relativeCutoff)
     .slice(0, input.topK ?? SEARCH_TOP_K);
 }

@@ -70,9 +70,13 @@ describe("searchCatalogBooks", () => {
       keywordSearch: async () => [{ ...hobbitHit, keywordScore: 0.8 }],
     });
 
-    expect(result.relevantContext[0]?.bookId).toBe(hobbit.id);
-    expect(result.relevantContext[0]?.matchType).toBe("title");
-    expect(result.relevantContext.map((hit) => hit.bookId)).toContain(earthseaId);
+    expect(result.relevantContext).toEqual([
+      expect.objectContaining({
+        bookId: hobbit.id,
+        matchType: "title",
+      }),
+    ]);
+    expect(result.relevantContext.map((hit) => hit.bookId)).not.toContain(earthseaId);
   });
 
   it("keeps a high-scoring semantic hit without query-word overlap", async () => {
