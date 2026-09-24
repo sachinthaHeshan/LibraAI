@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "description": "Catalog entity extraction: expected isbn/title/author/genre per query.",
+  "cases": [
+    { "id": "ent-isbn13", "input": "Do you have 978-0-547-92822-7?", "expected": { "isbn": "9780547928227", "title": null, "author": null, "genre": null } },
+    { "id": "ent-isbn10-x", "input": "isbn 080442957X please", "expected": { "isbn": "080442957X", "title": null, "author": null, "genre": null } },
+    { "id": "ent-quoted-title", "input": "Is \"The Hobbit\" available?", "expected": { "isbn": null, "title": "The Hobbit", "author": null, "genre": null } },
+    { "id": "ent-title-author", "input": "Find \"Dune\" by Frank Herbert", "expected": { "isbn": null, "title": "Dune", "author": "Frank Herbert", "genre": null } },
+    { "id": "ent-author-only", "input": "books by Agatha Christie", "expected": { "isbn": null, "title": null, "author": "Agatha Christie", "genre": null } },
+    { "id": "ent-genre", "input": "recommend me some sci-fi", "expected": { "isbn": null, "title": null, "author": null, "genre": "science fiction" } },
+    { "id": "ent-genre-author", "input": "fantasy books by Ursula K. Le Guin", "expected": { "isbn": null, "title": null, "author": "Ursula K. Le Guin", "genre": "fantasy" } },
+    { "id": "ent-historical", "input": "any good historical fiction?", "expected": { "isbn": null, "title": null, "author": null, "genre": "historical fiction" } },
+    { "id": "ent-unquoted-title", "input": "do we have Atomic Habits", "expected": { "isbn": null, "title": "Atomic Habits", "author": null, "genre": null } },
+    { "id": "ent-empty", "input": "hello there", "expected": { "isbn": null, "title": null, "author": null, "genre": null } }
+  ]
+}
