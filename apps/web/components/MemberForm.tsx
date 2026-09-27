@@ -102,7 +102,7 @@ export function MemberForm({
         <label className="block text-sm font-semibold text-ink">
           Status
           <select
-            className="field field-box mt-1.5"
+            className="field field-box field-select mt-1.5"
             onChange={(event) =>
               setStatus(event.target.value as "active" | "inactive")
             }

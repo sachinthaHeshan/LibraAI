@@ -79,7 +79,7 @@ export function IssueLoanForm({
         <label className="block text-sm font-semibold text-ink">
           Book
           <select
-            className="field field-box mt-1.5 disabled:bg-[#f1f4fb] disabled:text-muted"
+            className="field field-box field-select mt-1.5 disabled:bg-[#f1f4fb] disabled:text-muted"
             disabled={availableBooks.length === 0}
             onChange={(event) => setBookId(event.target.value)}
             required
@@ -101,7 +101,7 @@ export function IssueLoanForm({
         <label className="block text-sm font-semibold text-ink">
           Member
           <select
-            className="field field-box mt-1.5 disabled:bg-[#f1f4fb] disabled:text-muted"
+            className="field field-box field-select mt-1.5 disabled:bg-[#f1f4fb] disabled:text-muted"
             disabled={activeMembers.length === 0}
             onChange={(event) => setMemberId(event.target.value)}
             required
