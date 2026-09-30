@@ -1,0 +1,38 @@
+# syntax=docker/dockerfile:1
+
+FROM node:20-alpine AS base
+RUN corepack enable && corepack prepare pnpm@10.32.1 --activate
+WORKDIR /app
+
+FROM base AS deps
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY apps/api/package.json ./apps/api/
+COPY apps/web/package.json ./apps/web/
+COPY packages/db/package.json ./packages/db/
+# prepare on workspace packages can fail with manifests-only copy
+RUN pnpm install --frozen-lockfile --filter @libra/web... --ignore-scripts
+
+FROM base AS build
+# Optional build-arg; Dokploy runtime NEXT_PUBLIC_API_URL / API_URL is injected per request
+ARG NEXT_PUBLIC_API_URL=
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY apps/web ./apps/web
+RUN pnpm --filter @libra/web build
+
+FROM node:20-alpine AS runner
+ENV NODE_ENV=production
+WORKDIR /app
+
+# Next standalone output layout for apps/web in a monorepo
+COPY --from=build /app/apps/web/public ./apps/web/public
+COPY --from=build /app/apps/web/.next/standalone ./
+COPY --from=build /app/apps/web/.next/static ./apps/web/.next/static
+
+EXPOSE 3450
+ENV PORT=3450
+ENV HOSTNAME=0.0.0.0
+
+CMD ["node", "apps/web/server.js"]
