@@ -1,5 +1,6 @@
 import { createDb, type Db } from "@libra/db";
 import { Mastra } from "@mastra/core";
+import { MastraStorageExporter, Observability } from "@mastra/observability";
 import { env } from "../env.js";
 import { createBorrowAgent } from "./agents/borrow-agent.js";
 import { createOrchestratorAgent } from "./agents/orchestrator-agent.js";
@@ -11,6 +12,7 @@ import {
   RECOMMENDATION_AGENT_ID,
   SEARCH_AGENT_ID,
 } from "./constants.js";
+import { getMastraStorage } from "./storage.js";
 import { getPgVector } from "./vector.js";
 
 let cachedMastra: Mastra | undefined;
@@ -26,6 +28,16 @@ export function getMastra(db: Db) {
     cachedMastra = new Mastra({
       agents: { orchestratorAgent, searchAgent, borrowAgent, recommendationAgent },
       vectors: { pgVector: getPgVector() },
+      storage: getMastraStorage(),
+      // Traces every agent run into storage so Studio's Observability tab shows frontend chats.
+      observability: new Observability({
+        configs: {
+          default: {
+            serviceName: "libra-api",
+            exporters: [new MastraStorageExporter()],
+          },
+        },
+      }),
       logger: false,
     });
   }

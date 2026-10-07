@@ -22,6 +22,9 @@ importers:
       '@mastra/core':
         specifier: ^1.67.0
         version: 1.67.0(zod@4.4.3)
+      '@mastra/observability':
+        specifier: ^1.18.4
+        version: 1.18.4(@mastra/core@1.67.0(zod@4.4.3))(zod@4.4.3)
       '@mastra/pg':
         specifier: ^1.25.0
         version: 1.25.0(@mastra/core@1.67.0(zod@4.4.3))
@@ -1216,6 +1219,13 @@ packages:
     engines: {node: '>=22.13.0'}
     peerDependencies:
       '@mastra/core': '>=1.0.0-0 <2.0.0-0'
+
+  '@mastra/observability@1.18.4':
+    resolution: {integrity: sha512-41T4v4ydBkpof36rpqKcJ64GS65RVHI/VN0/V2Peg1YS8KDAYqBkzLSv022TILZldC/dA9DqivPq7BqGMwrr+w==}
+    engines: {node: '>=22.13.0'}
+    peerDependencies:
+      '@mastra/core': '>=1.16.0-0 <2.0.0-0'
+      zod: ^3.25.0 || ^4.0.0
 
   '@mastra/pg@1.25.0':
     resolution: {integrity: sha512-RRgIRMBIKeCT/i5Mr8zFB1Pu6h9nLGui5Sd4C0wY454rOflexuHp1pUwlGsLRc3sB/79PhpAzPzyPkOoOV9ufQ==}
@@ -5837,6 +5847,11 @@ snapshots:
       '@mastra/core': 1.67.0(zod@4.4.3)
       pino: 10.3.1
       pino-pretty: 13.1.3
+
+  '@mastra/observability@1.18.4(@mastra/core@1.67.0(zod@4.4.3))(zod@4.4.3)':
+    dependencies:
+      '@mastra/core': 1.67.0(zod@4.4.3)
+      zod: 4.4.3
 
   '@mastra/pg@1.25.0(@mastra/core@1.67.0(zod@4.4.3))':
     dependencies:
