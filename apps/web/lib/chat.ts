@@ -202,6 +202,25 @@ export function parseChatOptions(value: unknown): string[] {
   );
 }
 
+export type ChatTurn = {
+  id: string;
+  messages: ChatMessage[];
+};
+
+/** Groups messages into turns: a user question plus the assistant replies that follow it. */
+export function groupChatTurns(messages: ChatMessage[]): ChatTurn[] {
+  const turns: ChatTurn[] = [];
+  for (const message of messages) {
+    const current = turns.at(-1);
+    if (message.role === "user" || !current) {
+      turns.push({ id: message.id, messages: [message] });
+    } else {
+      current.messages.push(message);
+    }
+  }
+  return turns;
+}
+
 /** Quick replies belong to the latest assistant message only; older ones are stale. */
 export function activeQuickReplies(messages: ChatMessage[]): string[] {
   const last = messages.at(-1);
