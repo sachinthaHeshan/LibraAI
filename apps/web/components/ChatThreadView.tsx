@@ -4,8 +4,9 @@ import { useEffect, useRef } from "react";
 
 import { ChatBookCards } from "@/components/ChatBookCards";
 import { ChatComposer } from "@/components/ChatComposer";
+import { ChatQuickReplies } from "@/components/ChatQuickReplies";
 import { ThinkingIndicator } from "@/components/ThinkingIndicator";
-import { WELCOME_COPY, type ChatMessage } from "@/lib/chat";
+import { WELCOME_COPY, activeQuickReplies, type ChatMessage } from "@/lib/chat";
 
 type ChatThreadViewProps = {
   messages: ChatMessage[];
@@ -46,7 +47,11 @@ export function ChatThreadView({ messages, sending, onSend }: ChatThreadViewProp
             </div>
           ),
         )}
-        {sending ? <ThinkingIndicator /> : null}
+        {sending ? (
+          <ThinkingIndicator />
+        ) : (
+          <ChatQuickReplies onSelect={onSend} options={activeQuickReplies(messages)} />
+        )}
       </div>
 
       <div className="sticky bottom-0 pt-6">

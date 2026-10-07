@@ -7,6 +7,7 @@ import {
   timestamp,
   date,
   pgEnum,
+  primaryKey,
   uniqueIndex,
   index,
   customType,
@@ -107,11 +108,16 @@ export const members = pgTable(
     phone: text("phone"),
     membershipDate: date("membership_date").notNull(),
     status: memberStatusEnum("status").notNull().default("active"),
+    /** Set when the member signed up for their own login. Staff-created members have none. */
+    passwordHash: text("password_hash"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [
     uniqueIndex("members_organization_id_email_uidx").on(t.organizationId, t.email),
+    uniqueIndex("members_login_email_uidx")
+      .on(t.email)
+      .where(sql`${t.passwordHash} is not null`),
   ],
 );
 
@@ -128,3 +134,46 @@ export const loans = pgTable("loans", {
   returnedAt: timestamp("returned_at", { withTimezone: true }),
   status: loanStatusEnum("status").notNull().default("borrowed"),
 });
+
+/** Reading-preference tags a member picked. Tag keys come from the API's preference catalog. */
+export const memberPreferences = pgTable(
+  "member_preferences",
+  {
+    memberId: uuid("member_id")
+      .notNull()
+      .references(() => members.id, { onDelete: "cascade" }),
+    category: text("category").notNull(),
+    tag: text("tag").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.memberId, t.tag] })],
+);
+
+/** One run of the recommendation agent for a member (the overview's "Recommended for you"). */
+export const recommendationBatches = pgTable(
+  "recommendation_batches",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    memberId: uuid("member_id")
+      .notNull()
+      .references(() => members.id, { onDelete: "cascade" }),
+    summary: text("summary"),
+    generatedAt: timestamp("generated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("recommendation_batches_member_generated_idx").on(t.memberId, t.generatedAt)],
+);
+
+export const recommendationItems = pgTable(
+  "recommendation_items",
+  {
+    batchId: uuid("batch_id")
+      .notNull()
+      .references(() => recommendationBatches.id, { onDelete: "cascade" }),
+    bookId: uuid("book_id")
+      .notNull()
+      .references(() => books.id, { onDelete: "cascade" }),
+    position: integer("position").notNull(),
+    reasons: text("reasons").array().notNull().default(sql`'{}'::text[]`),
+  },
+  (t) => [primaryKey({ columns: [t.batchId, t.bookId] })],
+);

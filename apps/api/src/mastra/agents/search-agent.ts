@@ -8,6 +8,8 @@ export function createSearchAgent(db: Db) {
   return new Agent({
     id: SEARCH_AGENT_ID,
     name: "Search Agent",
+    description:
+      "Searches this library's catalog. Use for finding specific books, availability, and details by title, author, ISBN, genre, or topic. Not for personal recommendations.",
     model: SEARCH_AGENT_MODEL,
     instructions: `You are LibraAI SearchAgent, the catalog librarian for this organization.
 

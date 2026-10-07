@@ -3,8 +3,10 @@ import { and, eq } from "drizzle-orm";
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { calendarDateSchema } from "../lib/calendar-date.js";
+import { createLoan } from "../lib/create-loan.js";
+import { LOAN_DURATIONS, dueDateFor } from "../lib/loan-durations.js";
 import { AppError } from "../lib/errors.js";
-import { requireOrgId } from "../lib/org.js";
+import { accountRole, requireMemberId, requireOrgId } from "../lib/org.js";
 
 const loanParamsSchema = z.object({
   id: z.string().uuid(),
@@ -16,6 +18,11 @@ const createLoanSchema = z.object({
   dueDate: calendarDateSchema,
 });
 
+const borrowSchema = z.object({
+  bookId: z.string().uuid(),
+  duration: z.enum(LOAN_DURATIONS),
+});
+
 const listLoansQuerySchema = z.object({
   status: z.enum(["borrowed", "returned"]).optional(),
 });
@@ -24,63 +31,31 @@ export function createLoansRoutes(db: Db): FastifyPluginAsync {
   return async (app) => {
     app.addHook("preHandler", app.authenticate);
 
-    app.post("/loans", async (request, reply) => {
+    app.post("/loans", { preHandler: app.requireOwner }, async (request, reply) => {
       const orgId = requireOrgId(request);
       const input = createLoanSchema.parse(request.body);
 
-      const loan = await db.transaction(async (tx) => {
-        const [member] = await tx
-          .select()
-          .from(members)
-          .where(
-            and(
-              eq(members.id, input.memberId),
-              eq(members.organizationId, orgId),
-            ),
-          )
-          .limit(1)
-          .for("update");
-        if (!member) {
-          throw new AppError(404, "Member not found");
-        }
-        if (member.status !== "active") {
-          throw new AppError(400, "Member is inactive");
-        }
+      const { loan } = await createLoan(db, orgId, input);
 
-        const [book] = await tx
-          .select()
-          .from(books)
-          .where(
-            and(
-              eq(books.id, input.bookId),
-              eq(books.organizationId, orgId),
-            ),
-          )
-          .limit(1)
-          .for("update");
-        if (!book) {
-          throw new AppError(404, "Book not found");
-        }
-        if (book.availableCopies < 1) {
-          throw new AppError(400, "No copies available");
-        }
+      return reply.status(201).send(loan);
+    });
 
-        await tx
-          .update(books)
-          .set({
-            availableCopies: book.availableCopies - 1,
-            updatedAt: new Date(),
-          })
-          .where(eq(books.id, input.bookId));
+    /** A member borrows a book for themselves. */
+    app.post("/loans/borrow", async (request, reply) => {
+      const orgId = requireOrgId(request);
+      const memberId = requireMemberId(request);
+      const { bookId, duration } = borrowSchema.parse(request.body);
 
-        const [created] = await tx.insert(loans).values(input).returning();
-        return created;
+      const { loan } = await createLoan(db, orgId, {
+        bookId,
+        memberId,
+        dueDate: dueDateFor(duration),
       });
 
       return reply.status(201).send(loan);
     });
 
-    app.post("/loans/:id/return", async (request) => {
+    app.post("/loans/:id/return", { preHandler: app.requireOwner }, async (request) => {
       const orgId = requireOrgId(request);
       const { id } = loanParamsSchema.parse(request.params);
 
@@ -151,8 +126,11 @@ export function createLoansRoutes(db: Db): FastifyPluginAsync {
       });
     });
 
+    // Owners see every loan in the library; members see only their own.
     app.get("/loans", async (request) => {
       const orgId = requireOrgId(request);
+      const ownMemberId =
+        accountRole(request) === "member" ? request.user.sub : undefined;
       const { status } = listLoansQuerySchema.parse(request.query);
       const rows = await db
         .select({
@@ -180,6 +158,7 @@ export function createLoansRoutes(db: Db): FastifyPluginAsync {
             eq(books.organizationId, orgId),
             eq(members.organizationId, orgId),
             status ? eq(loans.status, status) : undefined,
+            ownMemberId ? eq(loans.memberId, ownMemberId) : undefined,
           ),
         );
       const today = new Date().toISOString().slice(0, 10);

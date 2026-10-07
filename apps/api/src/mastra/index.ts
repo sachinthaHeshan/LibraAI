@@ -1,27 +1,43 @@
 import { createDb, type Db } from "@libra/db";
 import { Mastra } from "@mastra/core";
 import { env } from "../env.js";
+import { createBorrowAgent } from "./agents/borrow-agent.js";
+import { createOrchestratorAgent } from "./agents/orchestrator-agent.js";
+import { createRecommendationAgent } from "./agents/recommendation-agent.js";
 import { createSearchAgent } from "./agents/search-agent.js";
-import { SEARCH_AGENT_ID } from "./constants.js";
+import {
+  BORROW_AGENT_ID,
+  ORCHESTRATOR_AGENT_ID,
+  RECOMMENDATION_AGENT_ID,
+  SEARCH_AGENT_ID,
+} from "./constants.js";
 import { getPgVector } from "./vector.js";
 
 let cachedMastra: Mastra | undefined;
-let searchAgent: ReturnType<typeof createSearchAgent> | undefined;
+let orchestratorAgent: ReturnType<typeof createOrchestratorAgent> | undefined;
+let recommendationAgent: ReturnType<typeof createRecommendationAgent> | undefined;
 
 export function getMastra(db: Db) {
-  if (!cachedMastra || !searchAgent) {
-    searchAgent = createSearchAgent(db);
+  if (!cachedMastra || !orchestratorAgent || !recommendationAgent) {
+    const searchAgent = createSearchAgent(db);
+    const borrowAgent = createBorrowAgent(db);
+    recommendationAgent = createRecommendationAgent(db);
+    orchestratorAgent = createOrchestratorAgent({ searchAgent, borrowAgent, recommendationAgent });
     cachedMastra = new Mastra({
-      agents: { searchAgent },
+      agents: { orchestratorAgent, searchAgent, borrowAgent, recommendationAgent },
       vectors: { pgVector: getPgVector() },
       logger: false,
     });
   }
-  return { mastra: cachedMastra, searchAgent };
+  return { mastra: cachedMastra, orchestratorAgent, recommendationAgent };
 }
 
-export function getSearchAgent(db: Db) {
-  return getMastra(db).searchAgent;
+export function getOrchestratorAgent(db: Db) {
+  return getMastra(db).orchestratorAgent;
+}
+
+export function getRecommendationAgent(db: Db) {
+  return getMastra(db).recommendationAgent;
 }
 
 /** Named export required by `mastra dev` / Studio. Skip in tests to avoid extra connections. */
@@ -31,4 +47,4 @@ export const mastra = (
     : getMastra(createDb(env.DATABASE_URL)).mastra
 ) as Mastra;
 
-export { SEARCH_AGENT_ID };
+export { BORROW_AGENT_ID, ORCHESTRATOR_AGENT_ID, RECOMMENDATION_AGENT_ID, SEARCH_AGENT_ID };

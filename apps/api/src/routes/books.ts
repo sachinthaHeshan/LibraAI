@@ -66,7 +66,7 @@ export function createBooksRoutes(db: Db): FastifyPluginAsync {
       return book;
     });
 
-    app.post("/books", async (request, reply) => {
+    app.post("/books", { preHandler: app.requireOwner }, async (request, reply) => {
       const orgId = requireOrgId(request);
       const input = createBookSchema.parse(request.body);
 
@@ -90,7 +90,7 @@ export function createBooksRoutes(db: Db): FastifyPluginAsync {
       }
     });
 
-    app.patch("/books/:id", async (request) => {
+    app.patch("/books/:id", { preHandler: app.requireOwner }, async (request) => {
       const orgId = requireOrgId(request);
       const { id } = bookParamsSchema.parse(request.params);
       const input = updateBookSchema.parse(request.body);
@@ -148,7 +148,7 @@ export function createBooksRoutes(db: Db): FastifyPluginAsync {
       }
     });
 
-    app.delete("/books/:id", async (request, reply) => {
+    app.delete("/books/:id", { preHandler: app.requireOwner }, async (request, reply) => {
       const orgId = requireOrgId(request);
       const { id } = bookParamsSchema.parse(request.params);
       const book = await db.query.books.findFirst({

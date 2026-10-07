@@ -11,9 +11,10 @@ import {
 } from "react";
 
 import { ChatBookCards } from "@/components/ChatBookCards";
+import { ChatQuickReplies } from "@/components/ChatQuickReplies";
 import { useChat } from "@/components/ChatProvider";
 import { ThinkingIndicator } from "@/components/ThinkingIndicator";
-import { WELCOME_COPY } from "@/lib/chat";
+import { WELCOME_COPY, activeQuickReplies } from "@/lib/chat";
 
 const AVATAR_SRC = "/chat-avatar.png?v=3";
 
@@ -159,7 +160,11 @@ export function ChatWidget(): JSX.Element {
                 </div>
               ),
             )}
-            {sending ? <ThinkingIndicator compact /> : null}
+            {sending ? (
+              <ThinkingIndicator compact />
+            ) : (
+              <ChatQuickReplies onSelect={sendMessage} options={activeQuickReplies(messages)} />
+            )}
           </div>
 
           <form className="border-t border-line p-3" onSubmit={onSubmit}>

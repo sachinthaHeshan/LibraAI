@@ -83,6 +83,7 @@ describe("GET /auth/me", () => {
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual({
       id: expect.any(String),
+      role: "owner",
       firstName: TEST_ADMIN.firstName,
       lastName: TEST_ADMIN.lastName,
       email: TEST_ADMIN.email,

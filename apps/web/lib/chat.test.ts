@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   PLACEHOLDER_ASSISTANT_REPLY,
   RECENT_CHATS_PAGE_SIZE,
+  activeQuickReplies,
   appendMessageToConversation,
   conversationTitle,
   createChatMessage,
@@ -75,6 +76,7 @@ describe("chat helpers", () => {
     ).resolves.toEqual({
       reply: "Here are a few Tolkien titles.",
       books,
+      options: [],
     });
     expect(fetchJson).toHaveBeenCalledWith("/ai/chat", {
       method: "POST",
@@ -82,6 +84,24 @@ describe("chat helpers", () => {
         messages: [{ role: "user", content: "Find Tolkien" }],
       }),
     });
+  });
+
+  it("returns quick-reply options from the API", async () => {
+    const fetchJson = vi.fn().mockResolvedValue({
+      reply: "It's available. How long do you need it?",
+      books: [],
+      options: ["1 week", "2 weeks", "1 month", 7, ""],
+    });
+    await expect(
+      fetchAssistantReply([{ role: "user", content: "Borrow Dune" }], fetchJson),
+    ).resolves.toMatchObject({ options: ["1 week", "2 weeks", "1 month"] });
+  });
+
+  it("shows quick replies only for the latest assistant message", () => {
+    const offer = createChatMessage("assistant", "How long?", 1, [], ["1 week"]);
+    expect(activeQuickReplies([offer])).toEqual(["1 week"]);
+    expect(activeQuickReplies([offer, createChatMessage("user", "1 week", 2)])).toEqual([]);
+    expect(activeQuickReplies([])).toEqual([]);
   });
 
   it("rejects empty assistant replies", async () => {
