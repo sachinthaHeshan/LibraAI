@@ -14,6 +14,7 @@ import {
   getCurrentUser,
   userInitials,
 } from "@/lib/current-user";
+import { useAccountRole } from "@/lib/use-account-role";
 
 function NavIcon({ children }: { children: ReactNode }) {
   return (
@@ -64,6 +65,7 @@ const links = [
   },
   {
     href: "/members",
+    ownerOnly: true,
     label: "Members",
     icon: (
       <NavIcon>
@@ -88,6 +90,7 @@ const links = [
   },
   {
     href: "/staff",
+    ownerOnly: true,
     label: "Staff",
     icon: (
       <NavIcon>
@@ -127,6 +130,20 @@ export function AppShell({
   const router = useRouter();
   const { reset } = useChat();
   const [user, setUser] = useState<CurrentUser | null>(null);
+  const role = useAccountRole();
+  const visibleLinks =
+    role === "member"
+      ? links
+          .filter((link) => !link.ownerOnly)
+          .map((link) => (link.href === "/loans" ? { ...link, label: "My loans" } : link))
+      : links;
+  const onOwnerOnlyPage =
+    role === "member" &&
+    links.some((link) => link.ownerOnly && pathname.startsWith(link.href));
+
+  useEffect(() => {
+    if (onOwnerOnlyPage) router.replace("/overview");
+  }, [onOwnerOnlyPage, router]);
 
   useEffect(() => {
     let active = true;
@@ -161,7 +178,7 @@ export function AppShell({
         </div>
 
         <nav aria-label="Main navigation" className="flex flex-1 flex-col gap-1 px-3 py-2">
-          {links.map((link) => {
+          {visibleLinks.map((link) => {
             const active = pathname.startsWith(link.href);
 
             return (
@@ -216,7 +233,12 @@ export function AppShell({
             )}
 
             <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
-              <button aria-label="Settings" className="btn-icon" type="button">
+              <Link
+                aria-current={pathname.startsWith("/settings") ? "page" : undefined}
+                aria-label="Settings"
+                className={`btn-icon ${pathname.startsWith("/settings") ? "text-accent" : ""}`}
+                href="/settings"
+              >
                 <svg
                   aria-hidden
                   className="h-5 w-5 shrink-0"
@@ -230,7 +252,7 @@ export function AppShell({
                   <circle cx="12" cy="12" r="3" />
                   <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 5 15.4a1.65 1.65 0 0 0-1.51-1H3.4a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 5 8.6a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9.4 5a1.65 1.65 0 0 0 1-1.51V3.4a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19 8.6a1.65 1.65 0 0 0 1.51 1h.09a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
                 </svg>
-              </button>
+              </Link>
               <button aria-label="Notifications" className="btn-icon relative" type="button">
                 <svg
                   aria-hidden
@@ -302,9 +324,11 @@ export function AppShell({
 
       <nav
         aria-label="Mobile navigation"
-        className="fixed inset-x-3 bottom-3 z-40 grid grid-cols-6 gap-1 rounded-2xl border border-line bg-white/95 p-1.5 shadow-lg backdrop-blur lg:hidden"
+        className={`fixed inset-x-3 bottom-3 z-40 grid ${
+          visibleLinks.length === links.length ? "grid-cols-6" : "grid-cols-4"
+        } gap-1 rounded-2xl border border-line bg-white/95 p-1.5 shadow-lg backdrop-blur lg:hidden`}
       >
-        {links.map((link) => {
+        {visibleLinks.map((link) => {
           const active = pathname.startsWith(link.href);
           return (
             <Link

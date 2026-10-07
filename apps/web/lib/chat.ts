@@ -20,6 +20,8 @@ export type ChatMessage = {
   content: string;
   createdAt: number;
   books?: ChatBook[];
+  /** Quick replies shown as buttons, e.g. loan durations. */
+  options?: string[];
 };
 
 export const PLACEHOLDER_ASSISTANT_REPLY =
@@ -39,6 +41,7 @@ export function createChatMessage(
   content: string,
   now: number = Date.now(),
   books?: ChatBook[],
+  options?: string[],
 ): ChatMessage {
   return {
     id: `${now}-${Math.random().toString(36).slice(2, 9)}`,
@@ -46,6 +49,7 @@ export function createChatMessage(
     content,
     createdAt: now,
     ...(books && books.length > 0 ? { books } : {}),
+    ...(options && options.length > 0 ? { options } : {}),
   };
 }
 
@@ -67,15 +71,23 @@ export function toChatApiMessages(messages: ChatMessage[]): ChatApiMessage[] {
 export async function fetchAssistantReply(
   messages: ChatApiMessage[],
   fetchJson: typeof apiFetch = apiFetch,
-): Promise<{ reply: string; books: ChatBook[] }> {
-  const data = await fetchJson<{ reply: string; books?: ChatBook[] }>("/ai/chat", {
+): Promise<{ reply: string; books: ChatBook[]; options: string[] }> {
+  const data = await fetchJson<{
+    reply: string;
+    books?: ChatBook[];
+    options?: unknown;
+  }>("/ai/chat", {
     method: "POST",
     body: JSON.stringify({ messages }),
   });
   if (!data.reply?.trim()) {
     throw new Error("Empty assistant reply");
   }
-  return { reply: data.reply, books: parseChatBooks(data.books) };
+  return {
+    reply: data.reply,
+    books: parseChatBooks(data.books),
+    options: parseChatOptions(data.options),
+  };
 }
 
 export type ChatConversation = {
@@ -181,6 +193,19 @@ function isChatBook(value: unknown): value is ChatBook {
     typeof book.totalCopies === "number" &&
     typeof book.availableCopies === "number"
   );
+}
+
+export function parseChatOptions(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(
+    (option): option is string => typeof option === "string" && option.trim().length > 0,
+  );
+}
+
+/** Quick replies belong to the latest assistant message only; older ones are stale. */
+export function activeQuickReplies(messages: ChatMessage[]): string[] {
+  const last = messages.at(-1);
+  return last?.role === "assistant" ? (last.options ?? []) : [];
 }
 
 export function parseChatBooks(value: unknown): ChatBook[] {

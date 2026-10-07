@@ -40,4 +40,14 @@ describe("AppShell", () => {
     expect(html).toContain('href="/chat"');
     expect(html).toContain("Find overdue loans");
   });
+
+  it("links the settings gear to the settings page", () => {
+    const html = renderToStaticMarkup(
+      <AppShell>
+        <p>page</p>
+      </AppShell>,
+    );
+
+    expect(html).toMatch(/<a[^>]*aria-label="Settings"[^>]*href="\/settings"/);
+  });
 });

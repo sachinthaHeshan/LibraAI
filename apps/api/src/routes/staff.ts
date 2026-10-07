@@ -1,6 +1,6 @@
-import { admins, type Db } from "@libra/db";
+import { admins, members, type Db } from "@libra/db";
 import bcrypt from "bcryptjs";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNotNull } from "drizzle-orm";
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { AppError } from "../lib/errors.js";
@@ -40,6 +40,7 @@ function toPublicAdmin(row: typeof admins.$inferSelect) {
 export function createStaffRoutes(db: Db): FastifyPluginAsync {
   return async (app) => {
     app.addHook("preHandler", app.authenticate);
+    app.addHook("preHandler", app.requireOwner);
 
     app.get("/staff", async (request) => {
       const orgId = requireOrgId(request);
@@ -52,6 +53,13 @@ export function createStaffRoutes(db: Db): FastifyPluginAsync {
     app.post("/staff", async (request, reply) => {
       const orgId = requireOrgId(request);
       const input = createStaffSchema.parse(request.body);
+
+      const memberLogin = await db.query.members.findFirst({
+        where: and(eq(members.email, input.email), isNotNull(members.passwordHash)),
+      });
+      if (memberLogin) {
+        throw new AppError(409, "Email already exists");
+      }
 
       try {
         const [admin] = await db

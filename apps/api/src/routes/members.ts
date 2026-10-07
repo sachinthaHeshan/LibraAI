@@ -31,15 +31,23 @@ function isUniqueViolation(error: unknown) {
   );
 }
 
+type MemberRow = typeof members.$inferSelect;
+
+function toPublicMember({ passwordHash: _passwordHash, ...member }: MemberRow) {
+  return member;
+}
+
 export function createMembersRoutes(db: Db): FastifyPluginAsync {
   return async (app) => {
     app.addHook("preHandler", app.authenticate);
+    app.addHook("preHandler", app.requireOwner);
 
     app.get("/members", async (request) => {
       const orgId = requireOrgId(request);
-      return db.query.members.findMany({
+      const rows = await db.query.members.findMany({
         where: eq(members.organizationId, orgId),
       });
+      return rows.map(toPublicMember);
     });
 
     app.get("/members/:id", async (request) => {
@@ -53,7 +61,7 @@ export function createMembersRoutes(db: Db): FastifyPluginAsync {
         throw new AppError(404, "Member not found");
       }
 
-      return member;
+      return toPublicMember(member);
     });
 
     app.post("/members", async (request, reply) => {
@@ -66,7 +74,7 @@ export function createMembersRoutes(db: Db): FastifyPluginAsync {
           .values({ ...input, organizationId: orgId })
           .returning();
 
-        return reply.status(201).send(member);
+        return reply.status(201).send(toPublicMember(member));
       } catch (error) {
         if (isUniqueViolation(error)) {
           throw new AppError(409, "Email already exists");
@@ -91,7 +99,7 @@ export function createMembersRoutes(db: Db): FastifyPluginAsync {
           throw new AppError(404, "Member not found");
         }
 
-        return member;
+        return toPublicMember(member);
       } catch (error) {
         if (isUniqueViolation(error)) {
           throw new AppError(409, "Email already exists");

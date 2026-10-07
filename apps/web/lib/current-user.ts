@@ -1,8 +1,9 @@
 import { apiFetch } from "./api";
-import { getToken } from "./auth";
+import { type AccountRole, getToken } from "./auth";
 
 export type CurrentUser = {
   id: string;
+  role: AccountRole;
   firstName: string;
   lastName: string;
   email: string;

@@ -17,9 +17,46 @@ function isUuid(value: string): boolean {
   return UUID_RE.test(value);
 }
 
-export function extractBookIdsFromToolResults(
-  toolResults: Array<{ name?: string; result?: unknown; payload?: unknown }>,
-): string[] {
+type ToolResultLike = { name?: string; result?: unknown; payload?: unknown };
+
+/**
+ * Visits every object in tool results, including results nested inside sub-agent calls.
+ * `agentTool` is the enclosing sub-agent call (e.g. "agent-borrowAgent"), if any.
+ * Return false from `visit` to skip that object's children.
+ */
+function walkToolResults(
+  toolResults: ToolResultLike[],
+  visit: (record: Record<string, unknown>, agentTool: string | undefined) => boolean | void,
+) {
+  function walk(value: unknown, agentTool: string | undefined) {
+    if (!value) return;
+    if (Array.isArray(value)) {
+      for (const item of value) walk(item, agentTool);
+      return;
+    }
+    if (typeof value !== "object") return;
+
+    const record = value as Record<string, unknown>;
+    if (visit(record, agentTool) === false) return;
+    const childAgentTool =
+      typeof record.toolName === "string" && record.toolName.startsWith("agent-")
+        ? record.toolName
+        : agentTool;
+    if (record.book) walk(record.book, childAgentTool);
+    if (record.result) walk(record.result, childAgentTool);
+    if (record.payload) walk(record.payload, childAgentTool);
+    if (record.relevantContext) walk(record.relevantContext, childAgentTool);
+    if (record.sources) walk(record.sources, childAgentTool);
+    if (record.recommendations) walk(record.recommendations, childAgentTool);
+    if (record.subAgentToolResults) walk(record.subAgentToolResults, childAgentTool);
+  }
+
+  for (const tool of toolResults) {
+    walk(tool, undefined);
+  }
+}
+
+export function extractBookIdsFromToolResults(toolResults: ToolResultLike[]): string[] {
   const ids: string[] = [];
   const seen = new Set<string>();
 
@@ -29,15 +66,9 @@ export function extractBookIdsFromToolResults(
     ids.push(id);
   }
 
-  function walk(value: unknown) {
-    if (!value) return;
-    if (Array.isArray(value)) {
-      for (const item of value) walk(item);
-      return;
-    }
-    if (typeof value !== "object") return;
-
-    const record = value as Record<string, unknown>;
+  walkToolResults(toolResults, (record, agentTool) => {
+    // While borrowing, search hits are only candidates; show the book the agent settled on.
+    if (agentTool === "agent-borrowAgent" && record.toolName === "searchBooks") return false;
     if (typeof record.bookId === "string") add(record.bookId);
     if (
       typeof record.id === "string" &&
@@ -45,16 +76,19 @@ export function extractBookIdsFromToolResults(
     ) {
       add(record.id);
     }
-    if (record.book) walk(record.book);
-    if (record.result) walk(record.result);
-    if (record.payload) walk(record.payload);
-    if (record.relevantContext) walk(record.relevantContext);
-    if (record.sources) walk(record.sources);
-  }
-
-  for (const tool of toolResults) {
-    walk(tool);
-  }
+  });
 
   return ids;
+}
+
+/** Quick-reply options for the chat UI, e.g. loan durations offered by the borrow agent. */
+export function extractChatOptionsFromToolResults(toolResults: ToolResultLike[]): string[] {
+  let options: string[] = [];
+  walkToolResults(toolResults, (record) => {
+    const offered = record.loanDurationOptions;
+    if (Array.isArray(offered) && offered.every((item) => typeof item === "string")) {
+      options = offered;
+    }
+  });
+  return options;
 }

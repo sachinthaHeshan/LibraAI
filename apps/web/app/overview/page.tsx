@@ -5,7 +5,9 @@ import { useCallback, useEffect, useId, useMemo, useState } from "react";
 
 import { AppShell } from "@/components/AppShell";
 import { OverviewAskBar } from "@/components/OverviewAskBar";
+import { RecommendedForYou } from "@/components/RecommendedForYou";
 import { apiFetch } from "@/lib/api";
+import { getTokenRole } from "@/lib/auth";
 import {
   type CurrentUser,
   getCurrentUser,
@@ -13,6 +15,7 @@ import {
   userInitials,
 } from "@/lib/current-user";
 import { lendingActivitySeries } from "@/lib/lending-activity";
+import { useAccountRole } from "@/lib/use-account-role";
 
 type Book = {
   id: string;
@@ -220,6 +223,8 @@ export default function OverviewPage() {
   const [activityLoans, setActivityLoans] = useState<ActivityLoan[]>([]);
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [loading, setLoading] = useState(true);
+  // Members see their own loans (the API scopes /loans) and no library-wide stats.
+  const isMember = useAccountRole() === "member";
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -227,7 +232,7 @@ export default function OverviewPage() {
       const [nextBooks, nextMembers, nextLoans, nextActivityLoans, nextUser] =
         await Promise.all([
           apiFetch<Book[]>("/books"),
-          apiFetch<Member[]>("/members"),
+          getTokenRole() === "member" ? Promise.resolve([]) : apiFetch<Member[]>("/members"),
           apiFetch<Loan[]>("/loans?status=borrowed"),
           apiFetch<ActivityLoan[]>("/loans"),
           getCurrentUser(),
@@ -253,9 +258,8 @@ export default function OverviewPage() {
   }, [load]);
 
   const displayName = user ? userDisplayName(user) : "Library Admin";
-  const displayRole = user
-    ? `Administrator @ ${user.organization.name}`
-    : "Administrator";
+  const roleLabel = isMember ? "Member" : "Administrator";
+  const displayRole = user ? `${roleLabel} @ ${user.organization.name}` : roleLabel;
   const initials = user ? userInitials(user) : "A";
 
   const totalCopies = books.reduce((sum, book) => sum + book.totalCopies, 0);
@@ -289,7 +293,7 @@ export default function OverviewPage() {
             />
             <path d="M15 4v4h4M9 12h6M9 16h4" stroke="currentColor" strokeLinecap="round" strokeWidth="1.6" />
           </svg>
-          Manage loans
+          {isMember ? "My loans" : "Manage loans"}
         </Link>
       }
       aside={
@@ -311,14 +315,24 @@ export default function OverviewPage() {
                 <dt className="text-xs font-medium text-muted">Titles</dt>
                 <dd className="mt-1 font-semibold text-ink">{books.length}</dd>
               </div>
+              {isMember ? null : (
+                  <div>
+                    <dt className="text-xs font-medium text-muted">Members</dt>
+                    <dd className="mt-1 font-semibold text-ink">{members.length}</dd>
+                  </div>
+              )}
               <div>
-                <dt className="text-xs font-medium text-muted">Members</dt>
-                <dd className="mt-1 font-semibold text-ink">{members.length}</dd>
-              </div>
-              <div>
-                <dt className="text-xs font-medium text-muted">Active loans</dt>
+                <dt className="text-xs font-medium text-muted">
+                  {isMember ? "My active loans" : "Active loans"}
+                </dt>
                 <dd className="mt-1 font-semibold text-ink">{loans.length}</dd>
               </div>
+              {isMember ? (
+                <div>
+                  <dt className="text-xs font-medium text-muted">Overdue</dt>
+                  <dd className="mt-1 font-semibold text-ink">{overdue}</dd>
+                </div>
+              ) : null}
             </dl>
           </div>
 
@@ -330,9 +344,20 @@ export default function OverviewPage() {
               <Link className="btn-ghost w-full text-sm" href="/books">
                 Open catalogue
               </Link>
-              <Link className="btn-ghost w-full text-sm" href="/members">
-                View members
-              </Link>
+              {isMember ? (
+                <>
+                  <Link className="btn-ghost w-full text-sm" href="/loans">
+                    View my loans
+                  </Link>
+                  <Link className="btn-ghost w-full text-sm" href="/settings">
+                    Reading preferences
+                  </Link>
+                </>
+              ) : (
+                <Link className="btn-ghost w-full text-sm" href="/members">
+                  View members
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -340,14 +365,20 @@ export default function OverviewPage() {
       title="Overview"
     >
       <div className="pb-28 lg:pb-24">
+        {isMember ? <RecommendedForYou /> : null}
         {loading ? (
-          <div className="grid gap-4 md:grid-cols-3">
+          isMember ? (
             <div className="card skeleton h-52" />
-            <div className="card skeleton h-52" />
-            <div className="card skeleton h-52" />
-          </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="card skeleton h-52" />
+              <div className="card skeleton h-52" />
+              <div className="card skeleton h-52" />
+            </div>
+          )
         ) : (
           <>
+            {isMember ? null : (
             <div className="mb-5 grid gap-4 md:grid-cols-3">
             <Ring
               caption="Copies free"
@@ -387,18 +418,21 @@ export default function OverviewPage() {
               value={onTimePct}
             />
           </div>
+            )}
 
           <section className="card mb-5 px-5 py-5">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-base font-bold text-ink">Lending activity</h2>
+              <h2 className="text-base font-bold text-ink">
+                {isMember ? "My lending activity" : "Lending activity"}
+              </h2>
               <div className="flex items-center gap-4 text-xs font-medium text-muted">
                 <span className="inline-flex items-center gap-1.5">
                   <span className="dot dot-ok" style={{ background: "#2f6bff" }} />
-                  Loans issued
+                  {isMember ? "Books borrowed" : "Loans issued"}
                 </span>
                 <span className="inline-flex items-center gap-1.5">
                   <span className="h-2 w-2 rounded-full bg-[#22c55e]" />
-                  {onLoan} currently out
+                  {isMember ? loans.length : onLoan} currently out
                 </span>
               </div>
             </div>
@@ -455,7 +489,9 @@ export default function OverviewPage() {
                   {books.length === 0 ? (
                     <tr>
                       <td className="px-5 py-8 text-sm text-muted" colSpan={4}>
-                        No books yet. Add titles in the catalogue.
+                        {isMember
+                          ? "No books in the catalogue yet."
+                          : "No books yet. Add titles in the catalogue."}
                       </td>
                     </tr>
                   ) : null}

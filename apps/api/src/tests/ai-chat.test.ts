@@ -3,7 +3,7 @@ import { buildApp } from "../create-app.js";
 import { TEST_ADMIN } from "./test-admin.js";
 
 vi.mock("../mastra/run-chat.js", () => ({
-  generateSearchReply: vi.fn(async () => ({
+  generateChatReply: vi.fn(async () => ({
     reply: "The Hobbit is available (2 copies).",
     books: [
       {

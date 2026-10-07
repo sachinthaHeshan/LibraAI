@@ -2,20 +2,35 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { type FormEvent, Suspense, useState } from "react";
+import { type FormEvent, Suspense, useEffect, useState } from "react";
 
 import { Logo } from "@/components/Logo";
 import { publicApiFetch } from "@/lib/api";
-import { setToken } from "@/lib/auth";
+import { type AccountRole, setToken } from "@/lib/auth";
 import { PLANS, formatLkr, parsePlanId, type PlanId } from "@/lib/plans";
 
 type SignupResponse = {
   token: string;
 };
 
+type Library = {
+  id: string;
+  name: string;
+};
+
+const ACCOUNT_TABS: { id: AccountRole; label: string }[] = [
+  { id: "owner", label: "Library owner" },
+  { id: "member", label: "Library member" },
+];
+
 function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [accountType, setAccountType] = useState<AccountRole>(() =>
+    searchParams.get("account") === "member" ? "member" : "owner",
+  );
+  const [libraries, setLibraries] = useState<Library[] | null>(null);
+  const [organizationId, setOrganizationId] = useState("");
   const [plan, setPlan] = useState<PlanId>(() =>
     parsePlanId(searchParams.get("plan")),
   );
@@ -29,6 +44,22 @@ function SignupForm() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const isOwner = accountType === "owner";
+
+  useEffect(() => {
+    if (accountType !== "member" || libraries) return;
+    let active = true;
+    publicApiFetch<Library[]>("/auth/libraries")
+      .then((rows) => {
+        if (active) setLibraries(rows);
+      })
+      .catch(() => {
+        if (active) setError("Unable to load libraries");
+      });
+    return () => {
+      active = false;
+    };
+  }, [accountType, libraries]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -36,25 +67,39 @@ function SignupForm() {
     setSubmitting(true);
 
     try {
+      const body = isOwner
+        ? {
+            accountType,
+            plan,
+            organization: {
+              name: orgName,
+              address: address || null,
+              phone: phone || null,
+            },
+            admin: {
+              firstName,
+              lastName,
+              email,
+              password,
+            },
+          }
+        : {
+            accountType,
+            organizationId,
+            member: {
+              firstName,
+              lastName,
+              email,
+              phone: phone || null,
+              password,
+            },
+          };
       const { token } = await publicApiFetch<SignupResponse>("/auth/signup", {
         method: "POST",
-        body: JSON.stringify({
-          plan,
-          organization: {
-            name: orgName,
-            address: address || null,
-            phone: phone || null,
-          },
-          admin: {
-            firstName,
-            lastName,
-            email,
-            password,
-          },
-        }),
+        body: JSON.stringify(body),
       });
       setToken(token);
-      router.push("/overview");
+      router.push(isOwner ? "/overview" : "/preferences");
     } catch (signupError) {
       setError(
         signupError instanceof Error
@@ -82,82 +127,146 @@ function SignupForm() {
           <div className="mb-6">
             <Logo className="mx-auto" href="/" priority size="lg" />
           </div>
+          <div
+            aria-label="Account type"
+            className="mb-6 grid grid-cols-2 gap-1 rounded-xl bg-[#f3f4f6] p-1"
+            role="tablist"
+          >
+            {ACCOUNT_TABS.map((tab) => {
+              const selected = accountType === tab.id;
+              return (
+                <button
+                  aria-selected={selected}
+                  className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
+                    selected
+                      ? "bg-white text-ink shadow-sm"
+                      : "text-muted hover:text-ink"
+                  }`}
+                  key={tab.id}
+                  onClick={() => {
+                    setAccountType(tab.id);
+                    setError("");
+                  }}
+                  role="tab"
+                  type="button"
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
           <h1 className="text-3xl font-bold tracking-tight text-ink">
-            Create your library
+            {isOwner ? "Create your library" : "Join your library"}
           </h1>
           <p className="mt-2 text-sm font-medium text-muted">
-            Start managing books, members, and loans in minutes.
+            {isOwner
+              ? "Start managing books, members, and loans in minutes."
+              : "Find books and borrow them from your library with LibraAI."}
           </p>
         </div>
 
         <form className="space-y-5" onSubmit={handleSubmit}>
-          <fieldset>
-            <legend className="mb-2 block text-sm font-semibold text-ink">
-              Plan
-            </legend>
-            <div className="grid gap-2 sm:grid-cols-3">
-              {PLANS.map((option) => {
-                const selected = plan === option.id;
-                return (
-                  <button
-                    aria-pressed={selected}
-                    className={`rounded-xl border px-3 py-3 text-left transition ${
-                      selected
-                        ? "border-accent bg-accent-soft shadow-sm"
-                        : "border-line bg-[#f3f4f6] hover:bg-[#eef0f4]"
-                    }`}
-                    key={option.id}
-                    onClick={() => setPlan(option.id)}
-                    type="button"
-                  >
-                    <span className="block text-sm font-bold text-ink">
-                      {option.name}
-                    </span>
-                    <span className="mt-1 block text-xs font-medium text-muted">
-                      {formatLkr(option.priceLkr)}/mo
-                    </span>
-                  </button>
-                );
-              })}
+          {isOwner ? (
+            <>
+              <fieldset>
+                <legend className="mb-2 block text-sm font-semibold text-ink">
+                  Plan
+                </legend>
+                <div className="grid gap-2 sm:grid-cols-3">
+                  {PLANS.map((option) => {
+                    const selected = plan === option.id;
+                    return (
+                      <button
+                        aria-pressed={selected}
+                        className={`rounded-xl border px-3 py-3 text-left transition ${
+                          selected
+                            ? "border-accent bg-accent-soft shadow-sm"
+                            : "border-line bg-[#f3f4f6] hover:bg-[#eef0f4]"
+                        }`}
+                        key={option.id}
+                        onClick={() => setPlan(option.id)}
+                        type="button"
+                      >
+                        <span className="block text-sm font-bold text-ink">
+                          {option.name}
+                        </span>
+                        <span className="mt-1 block text-xs font-medium text-muted">
+                          {formatLkr(option.priceLkr)}/mo
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </fieldset>
+
+              <div>
+                <label
+                  className="mb-2 block text-sm font-semibold text-ink"
+                  htmlFor="orgName"
+                >
+                  Library name
+                </label>
+                <input
+                  autoComplete="organization"
+                  className="field field-box"
+                  id="orgName"
+                  onChange={(event) => setOrgName(event.target.value)}
+                  placeholder="City Central Library"
+                  required
+                  type="text"
+                  value={orgName}
+                />
+              </div>
+
+              <div>
+                <label
+                  className="mb-2 block text-sm font-semibold text-ink"
+                  htmlFor="address"
+                >
+                  Address
+                </label>
+                <input
+                  autoComplete="street-address"
+                  className="field field-box"
+                  id="address"
+                  onChange={(event) => setAddress(event.target.value)}
+                  placeholder="Optional"
+                  type="text"
+                  value={address}
+                />
+              </div>
+            </>
+          ) : (
+            <div>
+              <label
+                className="mb-2 block text-sm font-semibold text-ink"
+                htmlFor="library"
+              >
+                Library
+              </label>
+              <select
+                className="field field-box field-select disabled:bg-[#f1f4fb] disabled:text-muted"
+                disabled={!libraries || libraries.length === 0}
+                id="library"
+                onChange={(event) => setOrganizationId(event.target.value)}
+                required
+                value={organizationId}
+              >
+                <option disabled value="">
+                  {!libraries
+                    ? "Loading libraries…"
+                    : libraries.length === 0
+                      ? "No libraries yet"
+                      : "Select your library"}
+                </option>
+                {libraries?.map((library) => (
+                  <option key={library.id} value={library.id}>
+                    {library.name}
+                  </option>
+                ))}
+              </select>
             </div>
-          </fieldset>
-
-          <div>
-            <label
-              className="mb-2 block text-sm font-semibold text-ink"
-              htmlFor="orgName"
-            >
-              Library name
-            </label>
-            <input
-              autoComplete="organization"
-              className="field field-box"
-              id="orgName"
-              onChange={(event) => setOrgName(event.target.value)}
-              placeholder="City Central Library"
-              required
-              type="text"
-              value={orgName}
-            />
-          </div>
-
-          <div>
-            <label
-              className="mb-2 block text-sm font-semibold text-ink"
-              htmlFor="address"
-            >
-              Address
-            </label>
-            <input
-              autoComplete="street-address"
-              className="field field-box"
-              id="address"
-              onChange={(event) => setAddress(event.target.value)}
-              placeholder="Optional"
-              type="text"
-              value={address}
-            />
-          </div>
+          )}
 
           <div>
             <label
@@ -226,7 +335,7 @@ function SignupForm() {
               className="field field-box"
               id="email"
               onChange={(event) => setEmail(event.target.value)}
-              placeholder="admin@library.lk"
+              placeholder={isOwner ? "admin@library.lk" : "you@example.com"}
               required
               type="email"
               value={email}

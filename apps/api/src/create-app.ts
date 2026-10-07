@@ -12,6 +12,8 @@ import { createBooksRoutes } from "./routes/books.js";
 import { createHealthRoutes } from "./routes/health.js";
 import { createLoansRoutes } from "./routes/loans.js";
 import { createMembersRoutes } from "./routes/members.js";
+import { createPreferencesRoutes } from "./routes/preferences.js";
+import { createRecommendationsRoutes } from "./routes/recommendations.js";
 import { createStaffRoutes } from "./routes/staff.js";
 
 export async function buildApp(app: FastifyInstance = Fastify()) {
@@ -47,6 +49,8 @@ export async function buildApp(app: FastifyInstance = Fastify()) {
   await app.register(createMembersRoutes(db));
   await app.register(createLoansRoutes(db));
   await app.register(createStaffRoutes(db));
+  await app.register(createPreferencesRoutes(db));
+  await app.register(createRecommendationsRoutes(db));
   await app.register(createAiChatRoutes(db));
 
   return app;

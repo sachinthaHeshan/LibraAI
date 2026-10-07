@@ -1,7 +1,11 @@
 import { books, type Db } from "@libra/db";
 import { and, eq, inArray } from "drizzle-orm";
-import { extractBookIdsFromToolResults, type ChatBook } from "./chat-books.js";
-import { getSearchAgent } from "./index.js";
+import {
+  extractBookIdsFromToolResults,
+  extractChatOptionsFromToolResults,
+  type ChatBook,
+} from "./chat-books.js";
+import { getOrchestratorAgent } from "./index.js";
 import { createCatalogRequestContext } from "./request-org.js";
 
 export type ChatTurn = {
@@ -9,9 +13,11 @@ export type ChatTurn = {
   content: string;
 };
 
-export type SearchReply = {
+export type ChatReply = {
   reply: string;
   books: ChatBook[];
+  /** Quick replies the UI shows as buttons. Empty when the agent offered none. */
+  options: string[];
 };
 
 async function loadChatBooks(db: Db, orgId: string, ids: string[]): Promise<ChatBook[]> {
@@ -41,13 +47,14 @@ async function loadChatBooks(db: Db, orgId: string, ids: string[]): Promise<Chat
   });
 }
 
-export async function generateSearchReply(input: {
+export async function generateChatReply(input: {
   db: Db;
   orgId: string;
+  memberId?: string;
   messages: ChatTurn[];
-}): Promise<SearchReply> {
-  const agent = getSearchAgent(input.db);
-  const requestContext = createCatalogRequestContext(input.orgId);
+}): Promise<ChatReply> {
+  const agent = getOrchestratorAgent(input.db);
+  const requestContext = createCatalogRequestContext(input.orgId, input.memberId);
   const result = await agent.generate(input.messages, { requestContext });
   const toolResults = [
     ...((result.toolResults ?? []) as Array<{ payload?: unknown; result?: unknown }>),
@@ -65,5 +72,6 @@ export async function generateSearchReply(input: {
   return {
     reply: result.text.trim(),
     books: booksFound,
+    options: extractChatOptionsFromToolResults(toolResults),
   };
 }

@@ -7,6 +7,7 @@ import { type FormEvent, useState } from "react";
 import { Logo } from "@/components/Logo";
 import { publicApiFetch } from "@/lib/api";
 import { setToken } from "@/lib/auth";
+import { pathAfterSignIn } from "@/lib/preferences";
 
 type LoginResponse = {
   token: string;
@@ -31,7 +32,7 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
       setToken(token);
-      router.push("/overview");
+      router.push(await pathAfterSignIn(token));
     } catch (loginError) {
       setError(
         loginError instanceof Error ? loginError.message : "Unable to sign in",

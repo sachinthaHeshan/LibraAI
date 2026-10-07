@@ -4,6 +4,7 @@ export function decodePayload(token: string) {
     sub: string;
     orgId: string;
     email: string;
+    role?: "owner" | "member";
     iat: number;
     exp: number;
   };

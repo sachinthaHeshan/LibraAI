@@ -10,6 +10,7 @@ import { Modal } from "@/components/Modal";
 import { StatCard } from "@/components/StatCard";
 import { TableSkeleton } from "@/components/TableSkeleton";
 import { apiFetch } from "@/lib/api";
+import { useAccountRole } from "@/lib/use-account-role";
 
 type Book = BookInput & {
   id: string;
@@ -27,6 +28,7 @@ export default function BooksPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const canEdit = useAccountRole() !== "member";
 
   const loadBooks = useCallback(
     async (search = activeQuery) => {
@@ -95,17 +97,19 @@ export default function BooksPage() {
   return (
     <AppShell
       actions={
-        <button
-          className="btn-primary text-sm"
-          onClick={() => {
-            setEditingBook(null);
-            setFormOpen(true);
-          }}
-          type="button"
-        >
-          <span aria-hidden>+</span>
-          Add book
-        </button>
+        canEdit ? (
+          <button
+            className="btn-primary text-sm"
+            onClick={() => {
+              setEditingBook(null);
+              setFormOpen(true);
+            }}
+            type="button"
+          >
+            <span aria-hidden>+</span>
+            Add book
+          </button>
+        ) : undefined
       }
       title="Books"
     >
@@ -165,14 +169,16 @@ export default function BooksPage() {
           <TableSkeleton cols={4} rows={6} />
         ) : books.length === 0 ? (
           <EmptyState
-            actionLabel={activeQuery ? undefined : "Add book"}
+            actionLabel={activeQuery || !canEdit ? undefined : "Add book"}
             description={
               activeQuery
                 ? "Try another title, author, or ISBN."
-                : "Add your first title to start lending."
+                : canEdit
+                  ? "Add your first title to start lending."
+                  : "This library has no books yet."
             }
             onAction={
-              activeQuery
+              activeQuery || !canEdit
                 ? undefined
                 : () => {
                     setEditingBook(null);
@@ -230,40 +236,42 @@ export default function BooksPage() {
                         </div>
                       </td>
                       <td className="text-right">
-                        <div className="inline-flex items-center gap-1">
-                          <button
-                            aria-label={`Edit ${book.title}`}
-                            className="btn-icon"
-                            onClick={() => {
-                              setEditingBook(book);
-                              setFormOpen(true);
-                            }}
-                            type="button"
-                          >
-                            <svg aria-hidden className="h-4 w-4" fill="none" viewBox="0 0 24 24">
-                              <path
-                                d="m5 16.5 9.8-9.8a1.5 1.5 0 0 1 2.1 0l1.4 1.4a1.5 1.5 0 0 1 0 2.1L8.5 20H5v-3.5Z"
-                                stroke="currentColor"
-                                strokeWidth="1.6"
-                              />
-                            </svg>
-                          </button>
-                          <button
-                            aria-label={`Delete ${book.title}`}
-                            className="btn-icon btn-icon-danger"
-                            onClick={() => void deleteBook(book)}
-                            type="button"
-                          >
-                            <svg aria-hidden className="h-4 w-4" fill="none" viewBox="0 0 24 24">
-                              <path
-                                d="M5 7h14M10 11v5M14 11v5M9 7l.6-1.5A1 1 0 0 1 10.5 5h3a1 1 0 0 1 .9.5L15 7m-8 0 1 11a2 2 0 0 0 2 1.8h4a2 2 0 0 0 2-1.8l1-11"
-                                stroke="currentColor"
-                                strokeLinecap="round"
-                                strokeWidth="1.6"
-                              />
-                            </svg>
-                          </button>
-                        </div>
+                        {canEdit ? (
+                          <div className="inline-flex items-center gap-1">
+                            <button
+                              aria-label={`Edit ${book.title}`}
+                              className="btn-icon"
+                              onClick={() => {
+                                setEditingBook(book);
+                                setFormOpen(true);
+                              }}
+                              type="button"
+                            >
+                              <svg aria-hidden className="h-4 w-4" fill="none" viewBox="0 0 24 24">
+                                <path
+                                  d="m5 16.5 9.8-9.8a1.5 1.5 0 0 1 2.1 0l1.4 1.4a1.5 1.5 0 0 1 0 2.1L8.5 20H5v-3.5Z"
+                                  stroke="currentColor"
+                                  strokeWidth="1.6"
+                                />
+                              </svg>
+                            </button>
+                            <button
+                              aria-label={`Delete ${book.title}`}
+                              className="btn-icon btn-icon-danger"
+                              onClick={() => void deleteBook(book)}
+                              type="button"
+                            >
+                              <svg aria-hidden className="h-4 w-4" fill="none" viewBox="0 0 24 24">
+                                <path
+                                  d="M5 7h14M10 11v5M14 11v5M9 7l.6-1.5A1 1 0 0 1 10.5 5h3a1 1 0 0 1 .9.5L15 7m-8 0 1 11a2 2 0 0 0 2 1.8h4a2 2 0 0 0 2-1.8l1-11"
+                                  stroke="currentColor"
+                                  strokeLinecap="round"
+                                  strokeWidth="1.6"
+                                />
+                              </svg>
+                            </button>
+                          </div>
+                        ) : null}
                       </td>
                     </tr>
                   );
