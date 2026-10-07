@@ -11,10 +11,11 @@ import {
 } from "react";
 
 import { ChatBookCards } from "@/components/ChatBookCards";
+import { ChatMarkdown } from "@/components/ChatMarkdown";
 import { ChatQuickReplies } from "@/components/ChatQuickReplies";
 import { useChat } from "@/components/ChatProvider";
 import { ThinkingIndicator } from "@/components/ThinkingIndicator";
-import { WELCOME_COPY, activeQuickReplies } from "@/lib/chat";
+import { WELCOME_COPY, activeQuickReplies, groupChatTurns } from "@/lib/chat";
 
 const AVATAR_SRC = "/chat-avatar.png?v=3";
 
@@ -129,7 +130,7 @@ export function ChatWidget(): JSX.Element {
 
           <div
             aria-live="polite"
-            className="flex-1 space-y-3 overflow-y-auto px-3 py-3"
+            className="flex-1 space-y-7 overflow-y-auto px-3 py-4"
             ref={listRef}
           >
             {messages.length === 0 ? (
@@ -140,31 +141,38 @@ export function ChatWidget(): JSX.Element {
                 </p>
               </div>
             ) : null}
-            {messages.map((message) =>
-              message.role === "user" ? (
-                <p
-                  className="ml-auto max-w-[85%] break-words whitespace-pre-wrap rounded-2xl rounded-br-md bg-accent-soft px-3 py-2 text-sm text-ink"
-                  key={message.id}
-                >
-                  {message.content}
-                </p>
-              ) : (
-                <div className="flex items-start gap-2" key={message.id}>
-                  <ChatAvatar size="sm" />
-                  <div className="min-w-0 flex-1">
-                    <p className="max-w-[85%] break-words whitespace-pre-wrap rounded-2xl rounded-bl-md bg-canvas px-3 py-2 text-sm text-ink">
+            {groupChatTurns(messages).map((turn, index, turns) => (
+              <section className="space-y-3" key={turn.id}>
+                {turn.messages.map((message) =>
+                  message.role === "user" ? (
+                    <p
+                      className="ml-auto max-w-[85%] break-words whitespace-pre-wrap rounded-2xl rounded-br-md bg-accent-soft px-3 py-2 text-sm text-ink"
+                      key={message.id}
+                    >
                       {message.content}
                     </p>
-                    <ChatBookCards books={message.books ?? []} />
-                  </div>
-                </div>
-              ),
-            )}
-            {sending ? (
-              <ThinkingIndicator compact />
-            ) : (
-              <ChatQuickReplies onSelect={sendMessage} options={activeQuickReplies(messages)} />
-            )}
+                  ) : (
+                    <div className="flex items-start gap-2" key={message.id}>
+                      <ChatAvatar size="sm" />
+                      <div className="min-w-0 flex-1">
+                        <ChatMarkdown
+                          className="max-w-[85%] rounded-2xl rounded-bl-md bg-canvas px-3 py-2"
+                          content={message.content}
+                        />
+                        <ChatBookCards books={message.books ?? []} />
+                      </div>
+                    </div>
+                  ),
+                )}
+                {index === turns.length - 1 ? (
+                  sending ? (
+                    <ThinkingIndicator compact />
+                  ) : (
+                    <ChatQuickReplies onSelect={sendMessage} options={activeQuickReplies(messages)} />
+                  )
+                ) : null}
+              </section>
+            ))}
           </div>
 
           <form className="border-t border-line p-3" onSubmit={onSubmit}>

@@ -11,6 +11,7 @@ import {
   createPlaceholderAssistantMessage,
   fetchAssistantReply,
   formatRelativeTime,
+  groupChatTurns,
   hasMoreRecentChats,
   isSendableContent,
   nextVisibleChatCount,
@@ -102,6 +103,25 @@ describe("chat helpers", () => {
     expect(activeQuickReplies([offer])).toEqual(["1 week"]);
     expect(activeQuickReplies([offer, createChatMessage("user", "1 week", 2)])).toEqual([]);
     expect(activeQuickReplies([])).toEqual([]);
+  });
+
+  it("groups each question with the replies that follow it", () => {
+    const q1 = createChatMessage("user", "Do we have Dune?", 1);
+    const a1 = createChatMessage("assistant", "Yes.", 2);
+    const q2 = createChatMessage("user", "Borrow it", 3);
+    const a2 = createChatMessage("assistant", "How long?", 4);
+    const a2b = createChatMessage("assistant", "Error, try again.", 5);
+    expect(groupChatTurns([q1, a1, q2, a2, a2b]).map((turn) => turn.messages)).toEqual([
+      [q1, a1],
+      [q2, a2, a2b],
+    ]);
+  });
+
+  it("starts a turn for a leading assistant message", () => {
+    const hello = createChatMessage("assistant", "Hi!", 1);
+    const q = createChatMessage("user", "Hello", 2);
+    expect(groupChatTurns([hello, q]).map((turn) => turn.messages)).toEqual([[hello], [q]]);
+    expect(groupChatTurns([])).toEqual([]);
   });
 
   it("rejects empty assistant replies", async () => {
