@@ -196,7 +196,7 @@ export default function BooksPage() {
                   <th>Author</th>
                   <th>ISBN</th>
                   <th>Availability</th>
-                  <th className="text-right">Actions</th>
+                  {canEdit ? <th className="text-right">Actions</th> : null}
                 </tr>
               </thead>
               <tbody>
@@ -235,8 +235,8 @@ export default function BooksPage() {
                           {status.label}
                         </div>
                       </td>
-                      <td className="text-right">
-                        {canEdit ? (
+                      {canEdit ? (
+                        <td className="text-right">
                           <div className="inline-flex items-center gap-1">
                             <button
                               aria-label={`Edit ${book.title}`}
@@ -271,8 +271,8 @@ export default function BooksPage() {
                               </svg>
                             </button>
                           </div>
-                        ) : null}
-                      </td>
+                        </td>
+                      ) : null}
                     </tr>
                   );
                 })}
