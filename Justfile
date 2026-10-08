@@ -109,6 +109,10 @@ seed-admin:
 seed-catalog:
     pnpm --filter @libra/api seed-catalog
 
+# Seed 300 books across 30 genres into a chosen library, then embed them
+seed-books:
+    pnpm --filter @libra/api seed-books
+
 # Embed the book catalog into pgvector (requires GOOGLE_GENERATIVE_AI_API_KEY)
 index-books:
 	pnpm --filter @libra/api index-books

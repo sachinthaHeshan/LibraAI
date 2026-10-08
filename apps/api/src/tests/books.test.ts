@@ -232,6 +232,48 @@ describe("books API", () => {
     });
   });
 
+  it("searches case-insensitively by partial title, author, and ISBN", async () => {
+    const isbn = `978-${randomUUID()}`;
+    const create = await app.inject({
+      method: "POST",
+      url: "/books",
+      headers: { authorization: `Bearer ${token}` },
+      payload: {
+        title: "The Zyzzyva Chronicles",
+        author: "Quentin Marlowe",
+        isbn,
+        totalCopies: 1,
+        genre: "Fantasy",
+      },
+    });
+    expect(create.statusCode).toBe(201);
+    const bookId = create.json().id;
+
+    const idsFor = async (q: string) => {
+      const response = await app.inject({
+        method: "GET",
+        url: `/books?q=${encodeURIComponent(q)}`,
+        headers: { authorization: `Bearer ${token}` },
+      });
+      expect(response.statusCode).toBe(200);
+      return response.json().map((book: { id: string }) => book.id);
+    };
+
+    expect(await idsFor("zyzz")).toContain(bookId);
+    expect(await idsFor("ZYZZYVA chron")).toContain(bookId);
+    expect(await idsFor("  zyzzyva   CHRONICLES ")).toContain(bookId);
+    expect(await idsFor("marlo")).toContain(bookId);
+    expect(await idsFor(isbn.slice(4, 14).toUpperCase())).toContain(bookId);
+    expect(await idsFor("zyzz%chron")).not.toContain(bookId);
+    expect(await idsFor("zyzz_va")).not.toContain(bookId);
+
+    await app.inject({
+      method: "DELETE",
+      url: `/books/${bookId}`,
+      headers: { authorization: `Bearer ${token}` },
+    });
+  });
+
   it("rejects invalid create input", async () => {
     const response = await app.inject({
       method: "POST",

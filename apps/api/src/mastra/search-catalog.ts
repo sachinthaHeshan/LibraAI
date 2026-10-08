@@ -1,5 +1,5 @@
 import { bookApiColumns, books, type Db } from "@libra/db";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, ilike, or, sql } from "drizzle-orm";
 import {
   BOOK_EMBEDDINGS_INDEX,
   SEARCH_CANDIDATE_K,
@@ -10,7 +10,7 @@ import {
   getBookEmbeddingModel,
 } from "./embedder.js";
 import { catalogVectorFilter } from "./request-org.js";
-import { confirmsKeywordHit, fuseSearchHits, type SearchMatchType } from "./search-rank.js";
+import { fuseSearchHits, type SearchMatchType } from "./search-rank.js";
 import {
   isbnDigits,
   normalizeRetrievalQuery,
@@ -128,31 +128,58 @@ export async function searchBooksFts(
     .limit(SEARCH_CANDIDATE_K);
 }
 
+/** Escapes LIKE wildcards so user input like "50%" or "a_b" matches literally. */
+function likePattern(term: string): string {
+  return `%${term.replace(/[\\%_]/g, (char) => `\\${char}`)}%`;
+}
+
+/**
+ * Catalog list for the books screen: case-insensitive substring (ILIKE) match on
+ * title, author, ISBN, genre, and description, ranked so title hits come first.
+ */
 export async function listCatalogBooks(
   db: Db,
   orgId: string,
   query?: string,
 ): Promise<CatalogBookRecord[]> {
-  if (!query?.trim()) {
+  const term = query?.trim().replace(/\s+/g, " ") ?? "";
+  if (!term) {
     return db
       .select(bookApiColumns)
       .from(books)
       .where(eq(books.organizationId, orgId));
   }
 
-  const rows = await searchBooksFts(db, orgId, query);
-  return rows
-    .filter((book) =>
-      confirmsKeywordHit(query, {
-        bookId: book.id,
-        title: book.title,
-        author: book.author,
-        isbn: book.isbn,
-        genre: book.genre,
-        keywordScore: book.keywordScore,
-      }),
+  const pattern = likePattern(term);
+  const isbn = isbnDigits(term);
+  const isbnMatch = isbn
+    ? sql`replace(${books.isbn}, '-', '') ILIKE ${likePattern(isbn)}`
+    : sql`${books.isbn} ILIKE ${pattern}`;
+  const rank = sql`CASE
+    WHEN lower(${books.title}) = lower(${term}) THEN 0
+    WHEN ${books.title} ILIKE ${pattern} THEN 1
+    WHEN ${books.author} ILIKE ${pattern} THEN 2
+    WHEN ${isbnMatch} THEN 3
+    WHEN ${books.genre} ILIKE ${pattern} THEN 4
+    ELSE 5
+  END`;
+
+  return db
+    .select(bookApiColumns)
+    .from(books)
+    .where(
+      and(
+        eq(books.organizationId, orgId),
+        or(
+          ilike(books.title, pattern),
+          ilike(books.author, pattern),
+          isbnMatch,
+          ilike(books.genre, pattern),
+          ilike(books.description, pattern),
+        ),
+      ),
     )
-    .map(({ keywordScore: _keywordScore, ...book }) => book);
+    .orderBy(rank, books.title);
 }
 
 export async function keywordSearchBooks(

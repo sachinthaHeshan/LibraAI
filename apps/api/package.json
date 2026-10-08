@@ -8,6 +8,7 @@
     "start": "tsx src/server.ts",
     "seed-admin": "tsx src/scripts/seed-admin.ts",
     "seed-catalog": "tsx src/scripts/seed-catalog.ts",
+    "seed-books": "tsx src/scripts/seed-best-books.ts",
     "index-books": "tsx src/scripts/index-books.ts",
     "mastra-studio": "mastra dev --env ../../.env",
     "test": "vitest run"

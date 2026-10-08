@@ -112,7 +112,10 @@ export async function promptOrganization(db: ReturnType<typeof createDb>) {
   }
 }
 
-export async function selectOrganization(db: ReturnType<typeof createDb>) {
+export async function selectOrganization(
+  db: ReturnType<typeof createDb>,
+  { alwaysPrompt = false, command = "just seed-catalog" } = {},
+) {
   const orgs = await db.select().from(organizations).orderBy(organizations.name);
 
   if (orgs.length === 0) {
@@ -120,14 +123,14 @@ export async function selectOrganization(db: ReturnType<typeof createDb>) {
     process.exit(1);
   }
 
-  if (orgs.length === 1) {
+  if (orgs.length === 1 && !alwaysPrompt) {
     const org = orgs[0]!;
     console.log(`Using organization ${org.name}`);
     return { organizationId: org.id, orgName: org.name };
   }
 
   if (!stdin.isTTY) {
-    console.error("Catalog seed requires an interactive terminal when more than one org exists. Run: just seed-catalog");
+    console.error(`Catalog seed requires an interactive terminal to pick an organization. Run: ${command}`);
     process.exit(1);
   }
 
