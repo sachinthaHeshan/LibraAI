@@ -3,7 +3,9 @@ import { and, eq, inArray } from "drizzle-orm";
 import {
   extractBookIdsFromToolResults,
   extractChatOptionsFromToolResults,
+  extractProvenanceFromToolResults,
   type ChatBook,
+  type ChatProvenance,
 } from "./chat-books.js";
 import { getOrchestratorAgent } from "./index.js";
 import { createCatalogRequestContext } from "./request-org.js";
@@ -18,6 +20,7 @@ export type ChatReply = {
   books: ChatBook[];
   /** Quick replies the UI shows as buttons. Empty when the agent offered none. */
   options: string[];
+  provenance: ChatProvenance;
 };
 
 async function loadChatBooks(db: Db, orgId: string, ids: string[]): Promise<ChatBook[]> {
@@ -73,5 +76,6 @@ export async function generateChatReply(input: {
     reply: result.text.trim(),
     books: booksFound,
     options: extractChatOptionsFromToolResults(toolResults),
+    provenance: extractProvenanceFromToolResults(toolResults),
   };
 }

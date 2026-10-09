@@ -177,3 +177,37 @@ export const recommendationItems = pgTable(
   },
   (t) => [primaryKey({ columns: [t.batchId, t.bookId] })],
 );
+
+export const aiAuditOutcomeEnum = pgEnum("ai_audit_outcome", [
+  "completed",
+  "refused",
+  "rate_limited",
+  "failed",
+]);
+
+/**
+ * Append-only record of each AI chat turn. Stores who asked, what the AI did, and a digest
+ * of the input — never the raw message, emails, phone numbers, or tokens.
+ */
+export const aiAuditEvents = pgTable(
+  "ai_audit_events",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organizations.id),
+    actorId: uuid("actor_id").notNull(),
+    actorRole: text("actor_role").notNull(),
+    outcome: aiAuditOutcomeEnum("outcome").notNull(),
+    refusalCode: text("refusal_code"),
+    agentIds: text("agent_ids").array().notNull().default(sql`'{}'::text[]`),
+    toolIds: text("tool_ids").array().notNull().default(sql`'{}'::text[]`),
+    /** SHA-256 of the user's message, so repeated prompts can be correlated without storing them. */
+    inputDigest: text("input_digest").notNull(),
+    inputChars: integer("input_chars").notNull(),
+    piiRedactions: integer("pii_redactions").notNull().default(0),
+    latencyMs: integer("latency_ms").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("ai_audit_events_org_created_idx").on(t.organizationId, t.createdAt)],
+);

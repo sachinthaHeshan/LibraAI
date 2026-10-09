@@ -1,4 +1,5 @@
 import { ChatComposer } from "@/components/ChatComposer";
+import { AiDisclosure } from "@/components/ChatProvenance";
 import { RecentChats } from "@/components/RecentChats";
 import type { ChatConversation } from "@/lib/chat";
 
@@ -27,6 +28,7 @@ export function ChatLandingView({
         </h1>
         <div className="mt-8 w-full text-left">
           <ChatComposer onSend={onSend} sending={sending} />
+          <AiDisclosure className="mt-3" />
         </div>
       </section>
       <div className="mt-12">

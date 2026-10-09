@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 import { ChatBookCards } from "@/components/ChatBookCards";
 import { ChatComposer } from "@/components/ChatComposer";
 import { ChatMarkdown } from "@/components/ChatMarkdown";
+import { AiDisclosure, ChatProvenance } from "@/components/ChatProvenance";
 import { ChatQuickReplies } from "@/components/ChatQuickReplies";
 import { ThinkingIndicator } from "@/components/ThinkingIndicator";
 import {
@@ -51,6 +52,7 @@ export function ChatThreadView({ messages, sending, onSend }: ChatThreadViewProp
                 <div className="w-full" key={message.id}>
                   <ChatMarkdown className="max-w-2xl" content={message.content} />
                   <ChatBookCards books={message.books ?? []} />
+                  <ChatProvenance meta={message.meta} />
                 </div>
               ),
             )}
@@ -68,6 +70,7 @@ export function ChatThreadView({ messages, sending, onSend }: ChatThreadViewProp
 
       <div className="sticky bottom-0 pt-6">
         <ChatComposer onSend={onSend} sending={sending} />
+        <AiDisclosure className="mt-2" />
       </div>
     </div>
   );

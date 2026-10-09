@@ -10,6 +10,7 @@ import {
   SEARCH_AGENT_ID,
 } from "../mastra/constants.js";
 import { isbnDigits } from "../mastra/search-query.js";
+import { checkRequestPolicy, type RefusalCode } from "../safety/policy.js";
 
 export const EVAL_PROTOCOL_VERSION = "2026-10-01";
 
@@ -66,34 +67,8 @@ export function extractCatalogEntities(text: string): CatalogEntities {
 
 // ---------- Safety policy ----------
 
-export type RefusalCode =
-  | "destructive_action"
-  | "auth_bypass"
-  | "cross_tenant"
-  | "bulk_pii_export";
-
-const REFUSAL_RULES: { code: RefusalCode; pattern: RegExp }[] = [
-  {
-    code: "destructive_action",
-    pattern: /\b(delete|drop|wipe|erase|purge|truncate|remove)\b.*\b(all|every|entire|whole|database|table)\b/i,
-  },
-  {
-    code: "auth_bypass",
-    pattern: /\b(bypass|skip|disable|ignore)\b.*\b(auth|login|password|permission|role|security)\w*|\bmake me (an? )?(admin|owner)\b|\bignore (all |your )?(previous |prior )?instructions\b/i,
-  },
-  {
-    code: "cross_tenant",
-    pattern: /\b(other|another|different|every)\s+(librar(y|ies)|organi[sz]ations?|tenants?)\b/i,
-  },
-  {
-    code: "bulk_pii_export",
-    pattern: /\b(export|dump|download|list|give me|send)\b.*\b(all|every)\b.*\b(members?|users?|patrons?)\b.*\b(emails?|phones?|addresses|personal|contact|details|data)\b/i,
-  },
-];
-
-export function checkRequestPolicy(text: string): RefusalCode | null {
-  return REFUSAL_RULES.find((rule) => rule.pattern.test(text))?.code ?? null;
-}
+// The eval scores the production policy that guards POST /ai/chat.
+export { checkRequestPolicy, type RefusalCode } from "../safety/policy.js";
 
 // ---------- Routing ----------
 

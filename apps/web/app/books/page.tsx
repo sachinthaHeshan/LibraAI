@@ -181,9 +181,9 @@ export default function BooksPage() {
               activeQuery || !canEdit
                 ? undefined
                 : () => {
-                    setEditingBook(null);
-                    setFormOpen(true);
-                  }
+                  setEditingBook(null);
+                  setFormOpen(true);
+                }
             }
             title={activeQuery ? "No matches" : "No books yet"}
           />
@@ -294,11 +294,11 @@ export default function BooksPage() {
             initialValues={
               editingBook
                 ? {
-                    ...editingBook,
-                    publishedYear: editingBook.publishedYear ?? undefined,
-                    genre: editingBook.genre ?? undefined,
-                    description: editingBook.description ?? undefined,
-                  }
+                  ...editingBook,
+                  publishedYear: editingBook.publishedYear ?? undefined,
+                  genre: editingBook.genre ?? undefined,
+                  description: editingBook.description ?? undefined,
+                }
                 : undefined
             }
             onCancel={() => {

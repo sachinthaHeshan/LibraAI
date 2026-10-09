@@ -12,6 +12,7 @@ import {
 
 import { ChatBookCards } from "@/components/ChatBookCards";
 import { ChatMarkdown } from "@/components/ChatMarkdown";
+import { AiDisclosure, ChatProvenance } from "@/components/ChatProvenance";
 import { ChatQuickReplies } from "@/components/ChatQuickReplies";
 import { useChat } from "@/components/ChatProvider";
 import { ThinkingIndicator } from "@/components/ThinkingIndicator";
@@ -160,6 +161,7 @@ export function ChatWidget(): JSX.Element {
                           content={message.content}
                         />
                         <ChatBookCards books={message.books ?? []} />
+                        <ChatProvenance meta={message.meta} />
                       </div>
                     </div>
                   ),
@@ -219,6 +221,7 @@ export function ChatWidget(): JSX.Element {
                 </div>
               </div>
             </div>
+            <AiDisclosure className="mt-2" />
           </form>
         </section>
       ) : null}

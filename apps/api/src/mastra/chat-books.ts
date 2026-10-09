@@ -92,3 +92,22 @@ export function extractChatOptionsFromToolResults(toolResults: ToolResultLike[])
   });
   return options;
 }
+
+export type ChatProvenance = {
+  /** Specialist agents the orchestrator delegated to, e.g. "searchAgent". */
+  agents: string[];
+  /** Tools those agents called, e.g. "searchBooks". */
+  tools: string[];
+};
+
+/** Which agents and tools produced a reply. Names only — never tool inputs or outputs. */
+export function extractProvenanceFromToolResults(toolResults: ToolResultLike[]): ChatProvenance {
+  const agents = new Set<string>();
+  const tools = new Set<string>();
+  walkToolResults(toolResults, (record) => {
+    if (typeof record.toolName !== "string") return;
+    if (record.toolName.startsWith("agent-")) agents.add(record.toolName.slice("agent-".length));
+    else tools.add(record.toolName);
+  });
+  return { agents: [...agents], tools: [...tools] };
+}

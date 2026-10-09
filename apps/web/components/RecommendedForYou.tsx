@@ -39,6 +39,12 @@ export function RecommendedForYou() {
           {data?.summary ? (
             <p className="mt-1 line-clamp-2 max-w-2xl text-sm text-muted">{data.summary}</p>
           ) : null}
+          <p className="mt-1 text-xs text-muted">
+            AI-picked from your reading preferences and loan history (popular titles if you have neither).{" "}
+            <Link className="btn-link" href="/settings">
+              How this works
+            </Link>
+          </p>
         </div>
         {data && data.books.length > 0 ? (
           <span className="badge shrink-0">{nextPicksLabel(data.nextRefreshAt)}</span>

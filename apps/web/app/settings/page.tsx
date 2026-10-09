@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { Alert } from "@/components/Alert";
+import { AiPrivacyNotice } from "@/components/AiPrivacyNotice";
 import { AppShell } from "@/components/AppShell";
 import { PreferenceTagPicker } from "@/components/PreferenceTagPicker";
 import { getTokenRole } from "@/lib/auth";
@@ -213,6 +214,7 @@ export default function SettingsPage() {
         </section>
 
         {isMember ? <ReadingPreferences /> : null}
+        <AiPrivacyNotice isMember={isMember} />
       </div>
     </AppShell>
   );

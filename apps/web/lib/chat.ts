@@ -14,6 +14,16 @@ export type ChatBook = {
   availableCopies: number;
 };
 
+/** How an assistant reply was produced. Names only; never prompts or tool payloads. */
+export type ChatMeta = {
+  agents: string[];
+  tools: string[];
+  /** Policy code when the request was declined before reaching the AI. */
+  refusal: string | null;
+  /** Emails, phone numbers, or card numbers hidden from the AI in this request. */
+  piiRedactions: number;
+};
+
 export type ChatMessage = {
   id: string;
   role: ChatRole;
@@ -22,6 +32,7 @@ export type ChatMessage = {
   books?: ChatBook[];
   /** Quick replies shown as buttons, e.g. loan durations. */
   options?: string[];
+  meta?: ChatMeta;
 };
 
 export const PLACEHOLDER_ASSISTANT_REPLY =
@@ -31,6 +42,65 @@ export const WELCOME_COPY = "Hi! What can I help you with today?";
 
 export const CHAT_FOLLOWUP_PLACEHOLDER =
   "Ask about a loan, book, member, or return…";
+
+export const AI_DISCLOSURE =
+  "LibraAI is an AI assistant and can make mistakes. Check important details in the catalog, and avoid sharing personal information.";
+
+const AGENT_LABELS: Record<string, string> = {
+  searchAgent: "Catalog search",
+  recommendationAgent: "Recommendations",
+  borrowAgent: "Borrowing",
+};
+
+const TOOL_LABELS: Record<string, string> = {
+  searchBooks: "searched the catalog",
+  getBook: "checked availability",
+  getMyMember: "checked your membership",
+  offerLoanDurations: "offered loan options",
+  borrowBook: "created a loan",
+  recommendBooks: "matched your reading profile",
+};
+
+const REFUSAL_LABELS: Record<string, string> = {
+  destructive_action: "bulk deletion",
+  auth_bypass: "permission or instruction changes",
+  cross_tenant: "other libraries' data",
+  bulk_pii_export: "exporting personal data",
+};
+
+/** One-line, human-readable summary of how a reply was produced. */
+export function describeChatMeta(meta: ChatMeta): string {
+  if (meta.refusal) {
+    const topic = REFUSAL_LABELS[meta.refusal] ?? "this request";
+    return `Declined by LibraAI's safety policy (${topic}). The AI was not used.`;
+  }
+  const agents = meta.agents.map((agent) => AGENT_LABELS[agent] ?? agent);
+  const tools = meta.tools.map((tool) => TOOL_LABELS[tool] ?? tool);
+  if (agents.length === 0 && tools.length === 0) return "AI-generated";
+  const via = agents.length > 0 ? ` by ${agents.join(", ")}` : "";
+  const steps = tools.length > 0 ? `: ${tools.join(", ")}` : "";
+  return `AI-generated${via}${steps}`;
+}
+
+export function parseChatMeta(value: unknown): ChatMeta | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const meta = value as Record<string, unknown>;
+  const names = (list: unknown) =>
+    Array.isArray(list) ? list.filter((item): item is string => typeof item === "string") : [];
+  const refusal = meta.refusal;
+  return {
+    agents: names(meta.agents),
+    tools: names(meta.tools),
+    refusal:
+      typeof refusal === "string"
+        ? refusal
+        : refusal && typeof refusal === "object" && typeof (refusal as { code?: unknown }).code === "string"
+          ? (refusal as { code: string }).code
+          : null,
+    piiRedactions:
+      typeof meta.piiRedactions === "number" && meta.piiRedactions > 0 ? meta.piiRedactions : 0,
+  };
+}
 
 export function isSendableContent(content: string): boolean {
   return content.trim().length > 0;
@@ -42,6 +112,7 @@ export function createChatMessage(
   now: number = Date.now(),
   books?: ChatBook[],
   options?: string[],
+  meta?: ChatMeta,
 ): ChatMessage {
   return {
     id: `${now}-${Math.random().toString(36).slice(2, 9)}`,
@@ -50,6 +121,7 @@ export function createChatMessage(
     createdAt: now,
     ...(books && books.length > 0 ? { books } : {}),
     ...(options && options.length > 0 ? { options } : {}),
+    ...(meta ? { meta } : {}),
   };
 }
 
@@ -64,18 +136,29 @@ export type ChatApiMessage = {
   content: string;
 };
 
+/**
+ * History sent to the API. Declined requests and their refusal replies are left out,
+ * so one refused message does not block the rest of the conversation.
+ */
 export function toChatApiMessages(messages: ChatMessage[]): ChatApiMessage[] {
-  return messages.map(({ role, content }) => ({ role, content }));
+  return messages
+    .filter((message, index) => {
+      if (message.meta?.refusal) return false;
+      const next = messages[index + 1];
+      return !(message.role === "user" && next?.role === "assistant" && next.meta?.refusal);
+    })
+    .map(({ role, content }) => ({ role, content }));
 }
 
 export async function fetchAssistantReply(
   messages: ChatApiMessage[],
   fetchJson: typeof apiFetch = apiFetch,
-): Promise<{ reply: string; books: ChatBook[]; options: string[] }> {
+): Promise<{ reply: string; books: ChatBook[]; options: string[]; meta?: ChatMeta }> {
   const data = await fetchJson<{
     reply: string;
     books?: ChatBook[];
     options?: unknown;
+    meta?: unknown;
   }>("/ai/chat", {
     method: "POST",
     body: JSON.stringify({ messages }),
@@ -87,6 +170,7 @@ export async function fetchAssistantReply(
     reply: data.reply,
     books: parseChatBooks(data.books),
     options: parseChatOptions(data.options),
+    meta: parseChatMeta(data.meta),
   };
 }
 
@@ -240,7 +324,8 @@ function isChatMessage(value: unknown): value is ChatMessage {
     (message.role === "user" || message.role === "assistant") &&
     typeof message.content === "string" &&
     typeof message.createdAt === "number" &&
-    (message.books === undefined || parseChatBooks(message.books).length === message.books.length)
+    (message.books === undefined || parseChatBooks(message.books).length === message.books.length) &&
+    (message.meta === undefined || parseChatMeta(message.meta) !== undefined)
   );
 }
 

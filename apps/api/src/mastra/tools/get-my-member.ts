@@ -9,7 +9,7 @@ export function createGetMyMemberTool(db: Db) {
   return createTool({
     id: "get-my-member",
     description:
-      "Get the signed-in user's library member details (name, email, status, books currently borrowed). Borrowing is only allowed when canBorrow is true.",
+      "Get the signed-in user's membership status and number of books currently borrowed. Borrowing is only allowed when canBorrow is true.",
     inputSchema: z.object({}),
     execute: async (_input, context) => {
       const orgId = requireOrgIdFromContext(context?.requestContext);
@@ -34,9 +34,8 @@ export function createGetMyMemberTool(db: Db) {
       return {
         canBorrow: active,
         ...(active ? {} : { reason: "Your membership is inactive. Please contact the library." }),
+        // Only what borrowing needs; contact details never reach the model.
         member: {
-          name: member.name,
-          email: member.email,
           status: member.status,
           activeLoans,
         },

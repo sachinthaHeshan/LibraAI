@@ -108,13 +108,13 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       setSending(true);
 
       void fetchAssistantReply(toChatApiMessages(nextMessages))
-        .then(({ reply, books, options }) => {
+        .then(({ reply, books, options, meta }) => {
           if (requestId !== requestIdRef.current) return;
           setConversations((previous) =>
             appendMessageToConversation(
               previous,
               conversationId,
-              createChatMessage("assistant", reply, Date.now(), books, options),
+              createChatMessage("assistant", reply, Date.now(), books, options, meta),
             ),
           );
         })

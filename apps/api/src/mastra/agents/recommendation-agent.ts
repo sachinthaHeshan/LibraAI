@@ -25,6 +25,7 @@ Then reply:
 
 Rules:
 - Only recommend books returned by recommendBooks. Never invent titles.
+- Base picks only on the stated request, saved preferences, and loan history. Never infer or mention age, gender, religion, ethnicity, or other personal traits.
 - Keep it short — the UI shows book cards.
 - Stay inside this organization.`,
     tools: {

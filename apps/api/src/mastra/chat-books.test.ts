@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   extractBookIdsFromToolResults,
   extractChatOptionsFromToolResults,
+  extractProvenanceFromToolResults,
 } from "./chat-books.js";
 
 describe("extractBookIdsFromToolResults", () => {
@@ -155,5 +156,34 @@ describe("extractChatOptionsFromToolResults", () => {
 
   it("returns no options when none were offered", () => {
     expect(extractChatOptionsFromToolResults([{ result: { found: true } }])).toEqual([]);
+  });
+});
+
+describe("extractProvenanceFromToolResults", () => {
+  it("lists delegated agents and their tools by name only", () => {
+    const provenance = extractProvenanceFromToolResults([
+      {
+        payload: {
+          toolName: "agent-borrowAgent",
+          result: {
+            text: "Borrowed.",
+            subAgentToolResults: [
+              { toolName: "getMyMember", result: { canBorrow: true } },
+              { toolName: "borrowBook", result: { borrowed: true } },
+              { toolName: "borrowBook", result: { borrowed: true } },
+            ],
+          },
+        },
+      },
+    ]);
+
+    expect(provenance).toEqual({
+      agents: ["borrowAgent"],
+      tools: ["getMyMember", "borrowBook"],
+    });
+  });
+
+  it("is empty when no tools ran", () => {
+    expect(extractProvenanceFromToolResults([])).toEqual({ agents: [], tools: [] });
   });
 });

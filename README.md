@@ -86,6 +86,13 @@ Book create/update also re-embeds when a Google key is present. Add a **genre** 
 
 The chat API is authenticated `POST /ai/chat` with `{ "messages": [{ "role": "user", "content": "..." }] }`.
 
+### Responsible AI
+
+Chat requests pass a deterministic safety policy, PII masking, and a per-user rate limit before
+any model runs. Replies carry provenance metadata (agents, tools, refusal code) shown in the UI,
+and each AI request is written to an append-only `ai_audit_events` table that owners can read at
+`GET /ai/audit-events`. See [docs/responsible-ai.md](docs/responsible-ai.md).
+
 ## Dokploy deploy
 
 Deploy the API and web app as **two separate Dokploy applications** from this repo. Use a separate Dokploy Postgres (or any external Postgres) — it is not included in either image.

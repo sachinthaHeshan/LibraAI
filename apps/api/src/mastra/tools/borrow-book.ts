@@ -26,7 +26,7 @@ export function createBorrowBookTool(db: Db) {
       }
 
       try {
-        const { loan, book, member } = await createLoan(db, orgId, {
+        const { loan, book } = await createLoan(db, orgId, {
           bookId,
           memberId,
           dueDate: dueDateFor(duration),
@@ -37,7 +37,6 @@ export function createBorrowBookTool(db: Db) {
           dueDate: loan.dueDate,
           bookId: book.id,
           title: book.title,
-          memberName: member.name,
         };
       } catch (error) {
         if (error instanceof AppError) {
