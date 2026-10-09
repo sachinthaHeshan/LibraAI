@@ -129,6 +129,14 @@ web:
 test:
     pnpm test:api
 
+# Deterministic evaluation (no API keys): writes apps/api/eval-results/latest/{manifest,results}.json + report.md
+eval:
+    pnpm eval
+
+# Scorer and report-generation tests (no database needed)
+test-eval:
+    pnpm test:eval
+
 # Stop Postgres
 down:
     docker compose down
