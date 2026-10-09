@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "description": "Search relevance: candidate keyword/vector hits are replayed through fuseSearchHits; relevant ids are the gold labels.",
+  "ks": [1, 3, 5],
+  "catalog": {
+    "hobbit": { "title": "The Hobbit", "author": "J. R. R. Tolkien", "isbn": "9780547928227", "genre": "Fantasy" },
+    "lotr": { "title": "The Fellowship of the Ring", "author": "J. R. R. Tolkien", "isbn": "9780547928210", "genre": "Fantasy" },
+    "dune": { "title": "Dune", "author": "Frank Herbert", "isbn": "9780441172719", "genre": "Science Fiction" },
+    "foundation": { "title": "Foundation", "author": "Isaac Asimov", "isbn": "9780553293357", "genre": "Science Fiction" },
+    "atomic": { "title": "Atomic Habits", "author": "James Clear", "isbn": "9780735211292", "genre": "Self-help" },
+    "sleep": { "title": "Sleep Better", "author": "Jane Doe", "isbn": "9780000000001", "genre": "Self-help" },
+    "orient": { "title": "Murder on the Orient Express", "author": "Agatha Christie", "isbn": "9780062693662", "genre": "Mystery" },
+    "acroyd": { "title": "The Murder of Roger Ackroyd", "author": "Agatha Christie", "isbn": "9780062073563", "genre": "Mystery" },
+    "gone": { "title": "Gone Girl", "author": "Gillian Flynn", "isbn": "9780307588371", "genre": "Thriller" },
+    "sapiens": { "title": "Sapiens", "author": "Yuval Noah Harari", "isbn": "9780062316097", "genre": "History" }
+  },
+  "cases": [
+    { "id": "search-exact-title", "query": "The Hobbit", "keywordHits": [["lotr", 0.3], ["hobbit", 0.6]], "vectorHits": [["hobbit", 0.8], ["lotr", 0.7]], "relevant": ["hobbit"] },
+    { "id": "search-isbn", "query": "9780441172719", "keywordHits": [["dune", 0.9]], "vectorHits": [], "relevant": ["dune"] },
+    { "id": "search-author", "query": "Agatha Christie", "keywordHits": [["acroyd", 0.4], ["orient", 0.4]], "vectorHits": [["gone", 0.66], ["orient", 0.7]], "relevant": ["orient", "acroyd"] },
+    { "id": "search-semantic", "query": "space empire politics", "keywordHits": [], "vectorHits": [["foundation", 0.74], ["dune", 0.71], ["sapiens", 0.5]], "relevant": ["foundation", "dune"] },
+    { "id": "search-habits", "query": "building good habits", "keywordHits": [["atomic", 0.35], ["sleep", 0.1]], "vectorHits": [["atomic", 0.82], ["sleep", 0.6]], "relevant": ["atomic"] },
+    { "id": "search-weak-semantic", "query": "books about bees", "keywordHits": [], "vectorHits": [["sapiens", 0.48]], "relevant": [] },
+    { "id": "search-title-typo-semantic", "query": "fellowship ring", "keywordHits": [["lotr", 0.5]], "vectorHits": [["lotr", 0.77], ["hobbit", 0.68]], "relevant": ["lotr"] }
+  ]
+}
