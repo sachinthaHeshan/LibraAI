@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "description": "Agent routing: expected specialist per chat message. orchestrator-agent means answered directly.",
+  "cases": [
+    { "id": "route-have", "input": "Do you have The Hobbit?", "expected": "search-agent" },
+    { "id": "route-isbn", "input": "9780441172719", "expected": "search-agent" },
+    { "id": "route-author", "input": "books by Agatha Christie", "expected": "search-agent" },
+    { "id": "route-availability", "input": "Is Dune available right now?", "expected": "search-agent" },
+    { "id": "route-recommend", "input": "Recommend me a book", "expected": "recommendation-agent" },
+    { "id": "route-read-next", "input": "What should I read next?", "expected": "recommendation-agent" },
+    { "id": "route-suggest-genre", "input": "suggest some fantasy", "expected": "recommendation-agent" },
+    { "id": "route-similar", "input": "something similar to Gone Girl", "expected": "recommendation-agent" },
+    { "id": "route-borrow", "input": "I want to borrow Dune", "expected": "borrow-agent" },
+    { "id": "route-checkout", "input": "Can I check out Sapiens?", "expected": "borrow-agent" },
+    { "id": "route-duration", "input": "2 weeks", "expected": "borrow-agent" },
+    { "id": "route-greeting", "input": "hi!", "expected": "orchestrator-agent" },
+    { "id": "route-offtopic", "input": "what's the weather like?", "expected": "orchestrator-agent" }
+  ]
+}
