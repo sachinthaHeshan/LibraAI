@@ -1,0 +1,22 @@
+{
+  "name": "libraai",
+  "private": true,
+  "scripts": {
+    "dev:api": "pnpm --filter @libra/api dev",
+    "dev:web": "pnpm --filter @libra/web dev",
+    "db:generate": "pnpm --filter @libra/db generate",
+    "db:migrate": "pnpm --filter @libra/db migrate",
+    "db:studio": "pnpm --filter @libra/db studio",
+    "db:build": "pnpm --filter @libra/db build",
+    "db:seed-admin": "pnpm --filter @libra/api seed-admin",
+    "db:seed-catalog": "pnpm --filter @libra/api seed-catalog",
+    "index-books": "pnpm --filter @libra/api index-books",
+    "mastra:studio": "pnpm --filter @libra/api mastra-studio",
+    "test:api": "pnpm --filter @libra/api test",
+    "eval": "pnpm --filter @libra/api eval",
+    "test:eval": "pnpm --filter @libra/api test:eval"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
